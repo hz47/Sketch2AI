@@ -185,8 +185,7 @@ resizes, or label edits.
   build finishes (about half a minute).
 - The account root https://hz47.github.io/ is a separate repo, `hz47/hz47.github.io`
   (branch `master`), holding a single `index.html` that redirects to
-  `/Sketch2AI/`. The old Astro portfolio that used to live there still exists in
-  source at `hz47/my-portfolio`; only the built output was replaced.
+  `/Sketch2AI/`. 
 
 ## Conventions
 
