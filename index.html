@@ -431,11 +431,22 @@
     ctx.strokeRect(marquee.x0, marquee.y0, w, h);
     ctx.restore();
   }
-  // Connected arrows / labels (from diagrams): an item carrying `from`/`to`
-  // node ids re-routes to the current edges of those boxes, so dragging a box
-  // makes its arrows follow. Resolved in place before every draw, so drawing,
-  // hit-testing, and bounds all read the fresh geometry. Items without from/to
-  // (everything you draw by hand) are never touched.
+  // Connected arrows / labels (draw.io-style). Every box carries a stable id;
+  // an arrow or label carrying `from`/`to` re-routes to the current edges of
+  // those boxes before each draw, so moving a box drags its connectors with it.
+  // Drawing an arrow from one box to another attaches it (see finalizeCreate).
+  // Items without from/to (a plain arrow in empty space) are never touched.
+  let _idc = 0;
+  function freshId() { return "b" + (++_idc); }
+  function ensureId(box) { if (!box.id) box.id = freshId(); return box.id; }
+  function boxAt(wx, wy) {
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      if (it.type === "shape" && (it.kind === "rect" || it.kind === "ellipse")
+          && wx >= it.x && wx <= it.x + it.w && wy >= it.y && wy <= it.y + it.h) return it;
+    }
+    return null;
+  }
   function boundaryPoint(box, tx, ty) {
     const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
     const hw = Math.abs(box.w) / 2, hh = Math.abs(box.h) / 2;
@@ -449,15 +460,27 @@
   function refreshConnectors() {
     let byId = null;
     for (const it of items) {
-      if (!it.from || !it.to) continue;
+      if (!it.from && !it.to) continue;
       if (it.type !== "shape" && it.type !== "text") continue;
       if (!byId) { byId = {}; for (const j of items) if (j.id) byId[j.id] = j; }
-      const a = byId[it.from], b = byId[it.to];
-      if (!a || !b || a.type !== "shape" || b.type !== "shape") continue;
-      const p1 = boundaryPoint(a, b.x + b.w / 2, b.y + b.h / 2);
-      const p2 = boundaryPoint(b, a.x + a.w / 2, a.y + a.h / 2);
-      if (it.type === "shape") { it.x1 = p1.x; it.y1 = p1.y; it.x2 = p2.x; it.y2 = p2.y; }
-      else { measureText(it); it.x = (p1.x + p2.x) / 2 - it._w / 2; it.y = (p1.y + p2.y) / 2 - it._h / 2; }
+      const a = it.from ? byId[it.from] : null, b = it.to ? byId[it.to] : null;
+      const aok = a && a.type === "shape", bok = b && b.type === "shape";
+      if (it.type === "text") {
+        if (!aok || !bok) continue;  // labels sit at the midpoint of both ends
+        const p1 = boundaryPoint(a, b.x + b.w / 2, b.y + b.h / 2);
+        const p2 = boundaryPoint(b, a.x + a.w / 2, a.y + a.h / 2);
+        measureText(it); it.x = (p1.x + p2.x) / 2 - it._w / 2; it.y = (p1.y + p2.y) / 2 - it._h / 2;
+        continue;
+      }
+      if (aok && bok) {
+        const p1 = boundaryPoint(a, b.x + b.w / 2, b.y + b.h / 2);
+        const p2 = boundaryPoint(b, a.x + a.w / 2, a.y + a.h / 2);
+        it.x1 = p1.x; it.y1 = p1.y; it.x2 = p2.x; it.y2 = p2.y;
+      } else if (aok) {                       // start attached, free end stays put
+        const p1 = boundaryPoint(a, it.x2, it.y2); it.x1 = p1.x; it.y1 = p1.y;
+      } else if (bok) {                       // end attached, free start stays put
+        const p2 = boundaryPoint(b, it.x1, it.y1); it.x2 = p2.x; it.y2 = p2.y;
+      }
     }
   }
   function render(overlay = true) {
@@ -503,7 +526,7 @@
     } else if (SHAPE_TOOLS[t]) {
       mode = "create"; canvas.setPointerCapture(e.pointerId);
       if (t === "line" || t === "arrow") cur = { type: "shape", kind: t, x1: wp.x, y1: wp.y, x2: wp.x, y2: wp.y, color: state.color, size: state.size };
-      else cur = { type: "shape", kind: t, x: wp.x, y: wp.y, w: 0, h: 0, color: state.color, size: state.size };
+      else cur = { type: "shape", kind: t, id: freshId(), x: wp.x, y: wp.y, w: 0, h: 0, color: state.color, size: state.size };
       items.push(cur); render();
     } else if (t === "select") {
       const single = selection.length === 1 ? selection[0] : null;
@@ -611,14 +634,23 @@
 
   function finalizeCreate() {
     const sh = cur;
+    let connected = false;
     if (sh.kind === "line" || sh.kind === "arrow") {
-      if (Math.hypot(sh.x2 - sh.x1, sh.y2 - sh.y1) < 4) { sh.x2 = sh.x1 + 140; sh.y2 = sh.y1; }
+      // Attach to any box under each end, so it becomes a live connector.
+      const sa = boxAt(sh.x1, sh.y1), sb = boxAt(sh.x2, sh.y2);
+      if (sa && sb && sa !== sb) { sh.from = ensureId(sa); sh.to = ensureId(sb); connected = true; }
+      else if (sa && !sb) { sh.from = ensureId(sa); connected = true; }
+      else if (sb && !sa) { sh.to = ensureId(sb); connected = true; }
+      if (!connected && Math.hypot(sh.x2 - sh.x1, sh.y2 - sh.y1) < 4) { sh.x2 = sh.x1 + 140; sh.y2 = sh.y1; }
     } else {
       if (Math.abs(sh.w) < 4 && Math.abs(sh.h) < 4) { sh.w = sh.kind === "ellipse" ? 120 : 150; sh.h = sh.kind === "ellipse" ? 120 : 90; }
       if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; }
     }
     state.tool = "select"; syncTools(); applyCursor(); selectOnly(sh);
-    setStatus("ok", (sh.kind === "rect" || sh.kind === "ellipse") ? "Shape added — double-click to label it" : "Added — drag the ends to adjust");
+    const msg = connected ? "Connected ✓ — move a box and the arrow follows"
+      : (sh.kind === "rect" || sh.kind === "ellipse") ? "Shape added — double-click to label it"
+      : "Added — draw an arrow between two boxes to connect them";
+    setStatus("ok", msg);
   }
 
   canvas.addEventListener("dblclick", (e) => {
