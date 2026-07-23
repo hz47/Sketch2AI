@@ -1,35 +1,30 @@
 <title>Sketch2AI</title>
 <style>
   :root {
-    --bg: #eceef2;
-    --panel: #ffffff;
-    --ink: #191d24;
-    --muted: #626a76;
-    --line: #d5d9e0;
-    --line-strong: #c2c8d1;
-    --accent: #ff4d2e;
-    --accent-ink: #ffffff;
-    --sheet: #ffffff;
-    --good: #1f9d55;
-    --shadow: 0 1px 2px rgba(20,23,28,.06), 0 8px 24px rgba(20,23,28,.08);
-    --radius: 10px;
+    --bg: #eceef2; --panel: #ffffff; --ink: #191d24; --muted: #626a76;
+    --line: #d5d9e0; --line-strong: #c2c8d1; --accent: #ff4d2e; --accent-ink: #ffffff;
+    --sheet: #ffffff; --grid: #d9dde3; --good: #1f9d55;
+    --shadow: 0 1px 2px rgba(20,23,28,.06), 0 8px 24px rgba(20,23,28,.08); --radius: 10px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14171c; --panel: #1c2028; --ink: #e7eaef; --muted: #99a1ad;
       --line: #2b313b; --line-strong: #3a4250; --accent: #ff6a4d; --accent-ink: #1a1005;
-      --good: #46c07a; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
+      --sheet: #ffffff; --grid: #e0e3e8; --good: #46c07a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
     }
   }
   :root[data-theme="dark"] {
     --bg: #14171c; --panel: #1c2028; --ink: #e7eaef; --muted: #99a1ad;
     --line: #2b313b; --line-strong: #3a4250; --accent: #ff6a4d; --accent-ink: #1a1005;
-    --good: #46c07a; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
+    --sheet: #ffffff; --grid: #e0e3e8; --good: #46c07a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.4);
   }
   :root[data-theme="light"] {
     --bg: #eceef2; --panel: #ffffff; --ink: #191d24; --muted: #626a76;
     --line: #d5d9e0; --line-strong: #c2c8d1; --accent: #ff4d2e; --accent-ink: #ffffff;
-    --good: #1f9d55; --shadow: 0 1px 2px rgba(20,23,28,.06), 0 8px 24px rgba(20,23,28,.08);
+    --sheet: #ffffff; --grid: #d9dde3; --good: #1f9d55;
+    --shadow: 0 1px 2px rgba(20,23,28,.06), 0 8px 24px rgba(20,23,28,.08);
   }
 
   * { box-sizing: border-box; }
@@ -40,7 +35,6 @@
     -webkit-font-smoothing: antialiased;
     display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
   }
-
   .rail {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     padding: 10px 14px; background: var(--panel);
@@ -48,29 +42,17 @@
   }
   .brand { display: flex; align-items: baseline; gap: 8px; margin-right: 2px; }
   .brand b { font-size: 14px; letter-spacing: -.01em; }
-  .brand span {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10.5px;
-    letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
-  }
   .group {
     display: flex; align-items: center; gap: 6px;
     padding-right: 12px; border-right: 1px solid var(--line);
   }
   .group:last-of-type { border-right: none; padding-right: 0; }
-  .glabel {
-    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 9.5px;
-    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
-    margin-right: 2px; user-select: none;
-  }
   .swatch {
     width: 24px; height: 24px; border-radius: 50%;
-    border: 2px solid var(--line-strong); cursor: pointer; padding: 0;
-    transition: transform .12s ease;
+    border: 2px solid var(--line-strong); cursor: pointer; padding: 0; transition: transform .12s ease;
   }
   .swatch:hover { transform: scale(1.08); }
-  .swatch[aria-pressed="true"] {
-    box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ink); border-color: transparent;
-  }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ink); border-color: transparent; }
   button.tool {
     font: inherit; font-size: 12.5px; color: var(--ink); background: var(--panel);
     border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 11px;
@@ -79,9 +61,7 @@
   }
   button.tool:hover { border-color: var(--muted); }
   button.tool:active { transform: translateY(1px); }
-  button.tool[aria-pressed="true"] {
-    background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-  }
+  button.tool[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   button.tool.danger:hover { border-color: var(--accent); color: var(--accent); }
   button.tool svg { width: 15px; height: 15px; }
   .size {
@@ -92,66 +72,62 @@
   .size[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
   .size i { display: block; border-radius: 50%; background: var(--ink); }
   .spacer { flex: 1; }
-  .toggle {
-    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-    user-select: none; font-size: 12.5px; color: var(--ink);
-  }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; font-size: 12.5px; color: var(--ink); }
   .toggle input { position: absolute; opacity: 0; pointer-events: none; }
-  .track {
-    width: 34px; height: 20px; border-radius: 999px; background: var(--line-strong);
-    position: relative; transition: background .16s ease; flex: none;
-  }
-  .track::after {
-    content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
-    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25);
-    transition: transform .16s ease;
-  }
+  .track { width: 34px; height: 20px; border-radius: 999px; background: var(--line-strong); position: relative; transition: background .16s ease; flex: none; }
+  .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .16s ease; }
   .toggle input:checked + .track { background: var(--good); }
   .toggle input:checked + .track::after { transform: translateX(14px); }
   .toggle input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .stage { flex: 1; position: relative; padding: 18px; min-height: 0; }
-  .sheet-wrap {
-    position: absolute; inset: 18px; border-radius: var(--radius);
-    background: var(--sheet); box-shadow: var(--shadow); overflow: hidden;
-  }
-  .sheet-wrap.drop { outline: 2px dashed var(--accent); outline-offset: -6px; }
-  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .stage { flex: 1; position: relative; padding: 0; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; background: var(--sheet); }
 
   .txt-editor {
     position: absolute; margin: 0; padding: 2px 4px; border: 1px solid var(--accent);
-    border-radius: 4px; background: rgba(255,255,255,.9); color: var(--ink);
+    border-radius: 4px; background: rgba(255,255,255,.92); color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     line-height: 1.25; resize: none; overflow: hidden; outline: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,.15); white-space: pre; z-index: 10;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15); white-space: pre; z-index: 10; transform-origin: top left;
   }
 
   .status {
-    position: absolute; left: 30px; bottom: 30px; display: inline-flex; align-items: center;
+    position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center;
     gap: 8px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px;
-    letter-spacing: .02em; color: #8a9099; background: rgba(255,255,255,.82);
+    letter-spacing: .02em; color: #8a9099; background: rgba(255,255,255,.85);
     backdrop-filter: blur(4px); padding: 5px 10px; border-radius: 7px;
-    border: 1px solid rgba(20,23,28,.06); pointer-events: none;
-    transition: color .2s ease, opacity .3s ease;
+    border: 1px solid rgba(20,23,28,.08); pointer-events: none; transition: color .2s ease, opacity .3s ease;
   }
   .status .dot { width: 7px; height: 7px; border-radius: 50%; background: #c2c8d1; transition: background .2s ease; }
   .status.ok { color: var(--good); } .status.ok .dot { background: var(--good); }
   .status.err { color: var(--accent); } .status.err .dot { background: var(--accent); }
+
+  .zoombar {
+    position: absolute; right: 16px; bottom: 16px; display: inline-flex; align-items: center;
+    background: var(--panel); border: 1px solid var(--line-strong); border-radius: 9px;
+    box-shadow: var(--shadow); overflow: hidden; user-select: none;
+  }
+  .zoombar button {
+    font: inherit; font-size: 13px; color: var(--ink); background: transparent; border: none;
+    padding: 7px 11px; cursor: pointer; display: grid; place-items: center; min-width: 34px;
+  }
+  .zoombar button:hover { background: var(--bg); }
+  .zoombar .sep { width: 1px; align-self: stretch; background: var(--line); }
+  .zoombar #zoomreset { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; min-width: 52px; font-variant-numeric: tabular-nums; }
 
   .hint {
     position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
     text-align: center; color: #b3bac4; padding: 24px;
   }
   .hint b { display:block; font-size: 15px; color: #9aa2ad; font-weight: 600; margin-bottom: 6px; }
-  .hint span { font-size: 12.5px; line-height: 1.6; }
+  .hint span { font-size: 12.5px; line-height: 1.7; }
   .hint kbd {
     font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px;
     background: #f1f3f6; border: 1px solid #dfe3e9; border-bottom-width: 2px;
     border-radius: 5px; padding: 1px 5px; color: #6b7280;
   }
 
-  @media (max-width: 860px) { .brand span, .glabel { display: none; } .group { padding-right: 9px; gap: 5px; } }
-  @media (max-width: 720px) { .stage { padding: 10px; } .sheet-wrap { inset: 10px; } }
+  @media (max-width: 900px) { .brand { display: none; } .group { padding-right: 9px; gap: 5px; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -167,6 +143,9 @@
     </button>
     <button class="tool" data-tool="select" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3l7 17 2-7 7-2z"/></svg>Move
+    </button>
+    <button class="tool" data-tool="hand" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-7-4l-2.5-4a2 2 0 0 1 3.5-2L8 14"/></svg>Pan
     </button>
     <button class="tool" data-tool="eraser" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15l4 4h5l6-6z"/><path d="M9 19h11"/></svg>Eraser
@@ -200,32 +179,39 @@
 
   <div class="spacer"></div>
 
-  <label class="toggle" title="Copy the whole board to your clipboard after every change">
+  <label class="toggle" title="Copy the whole drawing to your clipboard after every change">
     <input type="checkbox" id="autocopy" checked><span class="track"></span>Auto-copy
   </label>
   <button class="tool" id="copynow">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy now
   </button>
-  <button class="tool" id="savepng" title="Download as a PNG file if clipboard copy is blocked">
+  <button class="tool" id="savepng" title="Download the whole drawing as a PNG file">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Save PNG
   </button>
   <input type="file" id="fileinput" accept="image/*" multiple hidden>
 </div>
 
 <div class="stage">
-  <div class="sheet-wrap" id="sheet">
-    <canvas id="pad"></canvas>
-    <div class="hint" id="hint">
-      <div>
-        <b>Draw it, paste it, type it</b>
-        <span>
-          Sketch with the pen · <kbd>⌘V</kbd> to drop in a screenshot or text · drag image files in<br>
-          Everything auto-copies — then <kbd>⌘V</kbd> into Claude
-        </span>
-      </div>
+  <canvas id="pad"></canvas>
+  <div class="hint" id="hint">
+    <div>
+      <b>An endless canvas for talking to Claude in pictures</b>
+      <span>
+        Draw, <kbd>⌘V</kbd> to paste a screenshot or text, drag files in &nbsp;·&nbsp; scroll to pan, pinch or <kbd>⌘</kbd>+scroll to zoom<br>
+        Everything you make auto-copies. Paste it into Claude with <kbd>⌘V</kbd>.
+      </span>
     </div>
   </div>
   <div class="status" id="status"><span class="dot"></span><span id="statustext">Ready — auto-copy is on</span></div>
+  <div class="zoombar">
+    <button id="zoomout" title="Zoom out" aria-label="Zoom out">&minus;</button>
+    <span class="sep"></span>
+    <button id="zoomreset" title="Reset to 100%">100%</button>
+    <span class="sep"></span>
+    <button id="zoomin" title="Zoom in" aria-label="Zoom in">+</button>
+    <span class="sep"></span>
+    <button id="zoomfit" title="Fit everything in view">Fit</button>
+  </div>
 </div>
 
 <script>
@@ -233,146 +219,160 @@
   const canvas = document.getElementById("pad");
   const ctx = canvas.getContext("2d");
   const stage = canvas.parentElement;
-  const sheet = document.getElementById("sheet");
   const hint = document.getElementById("hint");
   const statusEl = document.getElementById("status");
   const statusText = document.getElementById("statustext");
   const fileInput = document.getElementById("fileinput");
+  const zoomLabel = document.getElementById("zoomreset");
   const SHEET = "#ffffff";
   const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+  const MIN_SCALE = 0.08, MAX_SCALE = 12;
 
-  let dpr = 1;
+  let dpr = 1, gridColor = "#d9dde3", accentColor = "#ff4d2e";
   const state = { tool: "pen", color: "#191d24", size: 6, autocopy: true };
-  const items = [];          // {type:'stroke'|'image'|'text', ...}
-  let selected = null;
-  let editor = null;
+  const view = { scale: 1, x: 0, y: 0 };   // world -> screen: p*scale + offset
+  const items = [];
+  let selected = null, editor = null;
 
-  // ---------- geometry helpers ----------
-  function itemBox(it) {
-    if (it.type === "image") return { x: it.x, y: it.y, w: it.w, h: it.h };
-    if (it.type === "text")  return { x: it.x, y: it.y, w: it._w || 0, h: it._h || 0 };
-    return null; // strokes aren't selectable
-  }
-  function hitItem(px, py) {
-    for (let i = items.length - 1; i >= 0; i--) {
-      const b = itemBox(items[i]);
-      if (b && px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h) return items[i];
-    }
-    return null;
-  }
-  function onHandle(it, px, py) {
-    const b = itemBox(it); if (!b) return false;
-    const hx = b.x + b.w, hy = b.y + b.h, r = 11;
-    return Math.abs(px - hx) <= r && Math.abs(py - hy) <= r;
-  }
+  // ---------- coordinate transforms ----------
+  function toWorld(sx, sy) { return { x: (sx - view.x) / view.scale, y: (sy - view.y) / view.scale }; }
+  function toScreen(wx, wy) { return { x: wx * view.scale + view.x, y: wy * view.scale + view.y }; }
+  function viewSize() { return { w: canvas.width / dpr, h: canvas.height / dpr }; }
+  function viewCenterWorld() { const v = viewSize(); return toWorld(v.w / 2, v.h / 2); }
 
-  // ---------- rendering ----------
+  // ---------- geometry ----------
   function measureText(it) {
     ctx.font = it.size + "px " + FONT;
     const lines = it.text.split("\n");
-    let w = 0;
-    for (const ln of lines) w = Math.max(w, ctx.measureText(ln || " ").width);
-    it._w = Math.ceil(w) + 6;
-    it._h = Math.ceil(lines.length * it.size * 1.25) + 4;
+    let w = 0; for (const ln of lines) w = Math.max(w, ctx.measureText(ln || " ").width);
+    it._w = Math.ceil(w) + 6; it._h = Math.ceil(lines.length * it.size * 1.25) + 4;
   }
-  function drawStroke(s) {
-    if (!s.points.length) return;
-    ctx.save();
-    ctx.strokeStyle = s.eraser ? SHEET : s.color;
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.lineWidth = s.size; ctx.lineJoin = "round"; ctx.lineCap = "round";
-    if (s.points.length === 1) {
-      const p = s.points[0];
-      ctx.beginPath(); ctx.arc(p.x, p.y, s.size / 2, 0, Math.PI * 2); ctx.fill();
-    } else {
-      ctx.beginPath(); ctx.moveTo(s.points[0].x, s.points[0].y);
-      for (let i = 1; i < s.points.length - 1; i++) {
-        const mx = (s.points[i].x + s.points[i + 1].x) / 2;
-        const my = (s.points[i].y + s.points[i + 1].y) / 2;
-        ctx.quadraticCurveTo(s.points[i].x, s.points[i].y, mx, my);
-      }
-      const last = s.points[s.points.length - 1];
-      ctx.lineTo(last.x, last.y); ctx.stroke();
+  function itemBox(it) {
+    if (it.type === "image") return { x: it.x, y: it.y, w: it.w, h: it.h };
+    if (it.type === "text") { if (it._w == null) measureText(it); return { x: it.x, y: it.y, w: it._w, h: it._h }; }
+    return null;
+  }
+  function hitItem(sx, sy) {
+    const wp = toWorld(sx, sy);
+    for (let i = items.length - 1; i >= 0; i--) {
+      const b = itemBox(items[i]);
+      if (b && wp.x >= b.x && wp.x <= b.x + b.w && wp.y >= b.y && wp.y <= b.y + b.h) return items[i];
     }
-    ctx.restore();
+    return null;
   }
-  function drawItem(it) {
-    if (it.type === "stroke") drawStroke(it);
-    else if (it.type === "image") ctx.drawImage(it.img, it.x, it.y, it.w, it.h);
+  function onHandle(it, sx, sy) {
+    const b = itemBox(it); if (!b) return false;
+    const h = toScreen(b.x + b.w, b.y + b.h);
+    return Math.abs(sx - h.x) <= 12 && Math.abs(sy - h.y) <= 12;
+  }
+
+  // ---------- drawing primitives (target-context aware) ----------
+  function drawStroke(g, s) {
+    if (!s.points.length) return;
+    g.save();
+    g.strokeStyle = s.eraser ? SHEET : s.color; g.fillStyle = g.strokeStyle;
+    g.lineWidth = s.size; g.lineJoin = "round"; g.lineCap = "round";
+    if (s.points.length === 1) {
+      const p = s.points[0]; g.beginPath(); g.arc(p.x, p.y, s.size / 2, 0, Math.PI * 2); g.fill();
+    } else {
+      g.beginPath(); g.moveTo(s.points[0].x, s.points[0].y);
+      for (let i = 1; i < s.points.length - 1; i++) {
+        const mx = (s.points[i].x + s.points[i + 1].x) / 2, my = (s.points[i].y + s.points[i + 1].y) / 2;
+        g.quadraticCurveTo(s.points[i].x, s.points[i].y, mx, my);
+      }
+      const last = s.points[s.points.length - 1]; g.lineTo(last.x, last.y); g.stroke();
+    }
+    g.restore();
+  }
+  function drawItem(g, it) {
+    if (it.type === "stroke") drawStroke(g, it);
+    else if (it.type === "image") g.drawImage(it.img, it.x, it.y, it.w, it.h);
     else if (it.type === "text") {
       measureText(it);
-      ctx.save();
-      ctx.fillStyle = it.color; ctx.textBaseline = "top"; ctx.font = it.size + "px " + FONT;
-      it.text.split("\n").forEach((ln, i) => ctx.fillText(ln, it.x + 3, it.y + 2 + i * it.size * 1.25));
-      ctx.restore();
+      g.save(); g.fillStyle = it.color; g.textBaseline = "top"; g.font = it.size + "px " + FONT;
+      it.text.split("\n").forEach((ln, i) => g.fillText(ln, it.x + 3, it.y + 2 + i * it.size * 1.25));
+      g.restore();
     }
   }
-  function render(withOverlay = true) {
-    ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const w = canvas.width / dpr, h = canvas.height / dpr;
-    ctx.fillStyle = SHEET; ctx.fillRect(0, 0, w, h);
-    for (const it of items) drawItem(it);
-    if (withOverlay && selected && state.tool === "select") {
-      const b = itemBox(selected);
-      if (b) {
-        ctx.save();
-        ctx.strokeStyle = getCss("--accent"); ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 4]); ctx.strokeRect(b.x - 3, b.y - 3, b.w + 6, b.h + 6);
-        ctx.setLineDash([]); ctx.fillStyle = getCss("--accent");
-        ctx.fillRect(b.x + b.w - 5, b.y + b.h - 5, 11, 11);
-        ctx.restore();
+
+  // ---------- main render ----------
+  function worldT() { ctx.setTransform(view.scale * dpr, 0, 0, view.scale * dpr, view.x * dpr, view.y * dpr); }
+  function screenT() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+
+  function drawGrid() {
+    const v = viewSize();
+    let step = 32, ss = step * view.scale;
+    while (ss < 22) { step *= 2; ss = step * view.scale; }
+    while (ss > 90) { step /= 2; ss = step * view.scale; }
+    const tl = toWorld(0, 0), br = toWorld(v.w, v.h);
+    const x0 = Math.floor(tl.x / step) * step, y0 = Math.floor(tl.y / step) * step;
+    ctx.fillStyle = gridColor;
+    for (let x = x0; x <= br.x; x += step) {
+      for (let y = y0; y <= br.y; y += step) {
+        const s = toScreen(x, y);
+        ctx.fillRect(s.x - 0.75, s.y - 0.75, 1.5, 1.5);
       }
     }
+  }
+  function drawSelection() {
+    const b = itemBox(selected); if (!b) return;
+    const p = toScreen(b.x, b.y), w = b.w * view.scale, h = b.h * view.scale;
+    ctx.save();
+    ctx.strokeStyle = accentColor; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+    ctx.strokeRect(p.x - 3, p.y - 3, w + 6, h + 6);
+    ctx.setLineDash([]); ctx.fillStyle = accentColor;
+    ctx.fillRect(p.x + w - 5, p.y + h - 5, 11, 11);
     ctx.restore();
+  }
+  function render(overlay = true) {
+    const v = viewSize();
+    screenT();
+    ctx.fillStyle = SHEET; ctx.fillRect(0, 0, v.w, v.h);
+    drawGrid();
+    worldT();
+    for (const it of items) drawItem(ctx, it);
+    screenT();
+    if (overlay && selected && state.tool === "select") drawSelection();
     hint.style.display = items.length ? "none" : "";
   }
-  function getCss(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#ff4d2e"; }
 
+  function refreshColors() {
+    const cs = getComputedStyle(document.documentElement);
+    gridColor = (cs.getPropertyValue("--grid").trim() || "#d9dde3");
+    accentColor = (cs.getPropertyValue("--accent").trim() || "#ff4d2e");
+  }
   function resize() {
     dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
     const r = stage.getBoundingClientRect();
-    canvas.width = Math.round(r.width * dpr);
-    canvas.height = Math.round(r.height * dpr);
+    canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
     render();
   }
 
   // ---------- pointer input ----------
-  let mode = null;       // 'draw' | 'move' | 'resize'
-  let cur = null, grab = null;
-
-  function pos(e) {
-    const r = canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
-  function center() { return { x: canvas.width / dpr / 2, y: canvas.height / dpr / 2 }; }
+  let mode = null, cur = null, grab = null, panStart = null, spaceDown = false;
+  function pos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 
   canvas.addEventListener("pointerdown", (e) => {
+    const p = pos(e);
+    if (e.button === 1 || spaceDown || state.tool === "hand") { startPan(e); return; }
     if (e.button !== undefined && e.button !== 0) return;
     if (editor) commitEditor();
-    const p = pos(e);
+    const wp = toWorld(p.x, p.y);
 
     if (state.tool === "pen" || state.tool === "eraser") {
-      mode = "draw";
-      canvas.setPointerCapture(e.pointerId);
-      cur = { type: "stroke", color: state.color, size: state.size, eraser: state.tool === "eraser", points: [p] };
-      items.push(cur);
-      setStatus("neutral", state.tool === "eraser" ? "Erasing…" : "Drawing…");
-      render();
+      mode = "draw"; canvas.setPointerCapture(e.pointerId);
+      cur = { type: "stroke", color: state.color, size: state.size, eraser: state.tool === "eraser", points: [wp] };
+      items.push(cur); setStatus("neutral", state.tool === "eraser" ? "Erasing…" : "Drawing…"); render();
     } else if (state.tool === "text") {
-      openEditor(p.x, p.y, null);
+      openEditor(wp.x, wp.y, null);
     } else if (state.tool === "select") {
       if (selected && onHandle(selected, p.x, p.y)) {
         mode = "resize"; canvas.setPointerCapture(e.pointerId);
         const b = itemBox(selected);
-        grab = { x0: p.x, y0: p.y, w0: b.w, h0: b.h, s0: selected.size, ratio: b.h / b.w };
+        grab = { wx: wp.x, wy: wp.y, w0: b.w, h0: b.h, s0: selected.size, ratio: b.h / b.w };
       } else {
-        const hit = hitItem(p.x, p.y);
-        selected = hit;
-        if (hit) {
-          mode = "move"; canvas.setPointerCapture(e.pointerId);
-          grab = { dx: p.x - hit.x, dy: p.y - hit.y };
-        }
+        const hit = hitItem(p.x, p.y); selected = hit;
+        if (hit) { mode = "move"; canvas.setPointerCapture(e.pointerId); grab = { dx: wp.x - hit.x, dy: wp.y - hit.y }; }
         render();
       }
     }
@@ -380,56 +380,115 @@
 
   canvas.addEventListener("pointermove", (e) => {
     const p = pos(e);
+    if (mode === "pan") {
+      view.x = panStart.vx + (e.clientX - panStart.px); view.y = panStart.vy + (e.clientY - panStart.py); render(); return;
+    }
     if (mode === "draw") {
       const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      for (const ev of evs) cur.points.push(pos(ev));
-      ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); drawStroke(cur); ctx.restore();
+      for (const ev of evs) { const q = pos(ev); cur.points.push(toWorld(q.x, q.y)); }
+      worldT(); drawStroke(ctx, cur); screenT();
     } else if (mode === "move" && selected) {
-      selected.x = p.x - grab.dx; selected.y = p.y - grab.dy; render();
+      const wp = toWorld(p.x, p.y); selected.x = wp.x - grab.dx; selected.y = wp.y - grab.dy; render();
     } else if (mode === "resize" && selected) {
-      if (selected.type === "image") {
-        let nw = Math.max(20, grab.w0 + (p.x - grab.x0));
-        selected.w = nw; selected.h = Math.max(20, nw * grab.ratio);
-      } else if (selected.type === "text") {
-        selected.size = Math.max(10, Math.min(200, grab.s0 + (p.x - grab.x0) * 0.4));
-      }
+      const wp = toWorld(p.x, p.y);
+      if (selected.type === "image") { const nw = Math.max(20, grab.w0 + (wp.x - grab.wx)); selected.w = nw; selected.h = Math.max(20, nw * grab.ratio); }
+      else if (selected.type === "text") { selected.size = Math.max(8, Math.min(400, grab.s0 + (wp.x - grab.wx) * 0.5)); selected._w = null; }
       render();
     } else if (state.tool === "select") {
-      const over = selected && (onHandle(selected, p.x, p.y)) ? "nwse-resize" : (hitItem(p.x, p.y) ? "move" : "default");
-      canvas.style.cursor = over;
+      canvas.style.cursor = (selected && onHandle(selected, p.x, p.y)) ? "nwse-resize" : (hitItem(p.x, p.y) ? "move" : "default");
     }
   });
 
+  function startPan(e) {
+    mode = "pan"; canvas.setPointerCapture(e.pointerId);
+    panStart = { px: e.clientX, py: e.clientY, vx: view.x, vy: view.y };
+    canvas.style.cursor = "grabbing";
+  }
   function endPointer() {
     if (!mode) return;
     const changed = mode === "draw" || mode === "move" || mode === "resize";
-    mode = null; cur = null; grab = null;
+    mode = null; cur = null; grab = null; panStart = null;
+    applyCursor();
     if (changed) commit(true);
   }
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
 
-  // cursor per tool
-  function applyCursor() {
-    canvas.style.cursor = state.tool === "pen" ? "crosshair"
-      : state.tool === "eraser" ? "cell"
-      : state.tool === "text" ? "text" : "default";
+  canvas.addEventListener("dblclick", (e) => {
+    const p = pos(e); const hit = hitItem(p.x, p.y);
+    if (hit && hit.type === "text") { selected = hit; openEditor(hit.x, hit.y, hit); }
+  });
+
+  // ---------- zoom + pan via wheel ----------
+  function setScaleAt(sx, sy, ns) {
+    ns = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ns));
+    const wp = toWorld(sx, sy);
+    view.scale = ns; view.x = sx - wp.x * ns; view.y = sy - wp.y * ns;
+    render(); updateZoomLabel();
+  }
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) { const p = pos(e); setScaleAt(p.x, p.y, view.scale * Math.exp(-e.deltaY * 0.0016)); }
+    else { view.x -= e.deltaX; view.y -= e.deltaY; render(); }
+  }, { passive: false });
+
+  function updateZoomLabel() { zoomLabel.textContent = Math.round(view.scale * 100) + "%"; }
+  document.getElementById("zoomin").addEventListener("click", () => { const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale * 1.25); });
+  document.getElementById("zoomout").addEventListener("click", () => { const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale / 1.25); });
+  document.getElementById("zoomreset").addEventListener("click", () => { const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, 1); });
+  document.getElementById("zoomfit").addEventListener("click", fitToContent);
+
+  function fitToContent() {
+    const v = viewSize();
+    if (!items.length) { view.scale = 1; view.x = 0; view.y = 0; render(); updateZoomLabel(); return; }
+    const b = contentBounds(), pad = 60;
+    const bw = (b.maxX - b.minX) + pad * 2, bh = (b.maxY - b.minY) + pad * 2;
+    let s = Math.min(v.w / bw, v.h / bh); s = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+    view.scale = s;
+    const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+    view.x = v.w / 2 - cx * s; view.y = v.h / 2 - cy * s;
+    render(); updateZoomLabel();
+  }
+
+  // ---------- content bounds + export ----------
+  function contentBounds() {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const it of items) {
+      if (it.type === "stroke") {
+        const r = it.size / 2;
+        for (const p of it.points) { minX = Math.min(minX, p.x - r); minY = Math.min(minY, p.y - r); maxX = Math.max(maxX, p.x + r); maxY = Math.max(maxY, p.y + r); }
+      } else {
+        const b = itemBox(it); minX = Math.min(minX, b.x); minY = Math.min(minY, b.y); maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h);
+      }
+    }
+    if (!isFinite(minX)) { minX = minY = 0; maxX = maxY = 1; }
+    return { minX, minY, maxX, maxY };
+  }
+  function renderExport() {
+    const b = contentBounds(), pad = 28;
+    const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
+    let s = 2; const maxDim = 4096;
+    s = Math.min(s, maxDim / w, maxDim / h); s = Math.max(0.5, s);
+    const off = document.createElement("canvas");
+    off.width = Math.max(1, Math.round(w * s)); off.height = Math.max(1, Math.round(h * s));
+    const g = off.getContext("2d");
+    g.fillStyle = SHEET; g.fillRect(0, 0, off.width, off.height);
+    g.setTransform(s, 0, 0, s, -(b.minX - pad) * s, -(b.minY - pad) * s);
+    for (const it of items) drawItem(g, it);
+    return off;
   }
 
   // ---------- text editor ----------
-  function openEditor(x, y, existing) {
-    const it = existing || { type: "text", text: "", x, y, size: Math.max(16, state.size * 4), color: state.color };
+  function openEditor(wx, wy, existing) {
+    const it = existing || { type: "text", text: "", x: wx, y: wy, size: Math.max(16, state.size * 4), color: state.color };
+    const scr = toScreen(it.x, it.y);
     const ta = document.createElement("textarea");
-    ta.className = "txt-editor";
-    ta.value = it.text;
-    ta.style.left = (existing ? it.x : x) + "px";
-    ta.style.top = (existing ? it.y : y) + "px";
-    ta.style.fontSize = it.size + "px";
-    ta.style.color = it.color;
-    ta.rows = 1;
-    sheet.appendChild(ta);
+    ta.className = "txt-editor"; ta.value = it.text;
+    ta.style.left = scr.x + "px"; ta.style.top = scr.y + "px";
+    ta.style.fontSize = (it.size * view.scale) + "px"; ta.style.color = it.color; ta.rows = 1;
+    stage.appendChild(ta);
     editor = { el: ta, item: it, isNew: !existing };
-    if (existing) { selected = null; render(); } // hide baked text while editing
+    if (existing) { selected = null; render(); }
     const grow = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; ta.style.width = (ta.scrollWidth + 4) + "px"; };
     ta.addEventListener("input", grow);
     requestAnimationFrame(() => { ta.focus(); grow(); });
@@ -440,224 +499,145 @@
     ta.addEventListener("blur", commitEditor);
     setStatus("neutral", "Type your note — click away to place it");
   }
-  function cancelEditor() {
-    if (!editor) return;
-    const e = editor; editor = null; e.el.removeEventListener("blur", commitEditor); e.el.remove();
-    render();
-  }
+  function cancelEditor() { if (!editor) return; const e = editor; editor = null; e.el.removeEventListener("blur", commitEditor); e.el.remove(); render(); }
   function commitEditor() {
-    if (!editor) return;
-    const e = editor; editor = null;
+    if (!editor) return; const e = editor; editor = null;
     e.el.removeEventListener("blur", commitEditor);
-    const text = e.el.value.replace(/\s+$/,"");
-    e.el.remove();
-    if (text) {
-      e.item.text = text;
-      if (e.isNew) items.push(e.item);
-      selected = e.item;
-      commit(true);
-    } else {
-      render();
-    }
+    const text = e.el.value.replace(/\s+$/, ""); e.el.remove();
+    if (text) { e.item.text = text; e.item._w = null; if (e.isNew) items.push(e.item); selected = e.item; commit(true); }
+    else render();
   }
 
-  // double-click to edit existing text with the Move tool
-  canvas.addEventListener("dblclick", (e) => {
-    const p = pos(e);
-    const hit = hitItem(p.x, p.y);
-    if (hit && hit.type === "text") { selected = hit; openEditor(hit.x, hit.y, hit); }
-  });
-
-  // ---------- adding images ----------
-  function addImageFromSrc(src, cx, cy) {
-    const img = new Image();
-    img.onload = () => {
-      const maxW = (canvas.width / dpr) * 0.7, maxH = (canvas.height / dpr) * 0.7;
-      let w = img.naturalWidth, h = img.naturalHeight;
-      const scale = Math.min(1, maxW / w, maxH / h);
-      w *= scale; h *= scale;
-      const c = (cx != null) ? { x: cx, y: cy } : center();
-      items.push({ type: "image", img, x: c.x - w / 2, y: c.y - h / 2, w, h });
-      state.tool = "select"; selected = items[items.length - 1]; syncTools(); applyCursor();
-      setStatus("ok", "Image added — drag to move, corner to resize");
-      commit(true);
-    };
-    img.src = src;
+  // ---------- adding images / text ----------
+  function placeImage(img, wx, wy) {
+    const v = viewSize();
+    const maxW = (v.w * 0.7) / view.scale, maxH = (v.h * 0.7) / view.scale;
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const sc = Math.min(1, maxW / w, maxH / h); w *= sc; h *= sc;
+    const c = (wx != null) ? { x: wx, y: wy } : viewCenterWorld();
+    items.push({ type: "image", img, x: c.x - w / 2, y: c.y - h / 2, w, h });
+    state.tool = "select"; selected = items[items.length - 1]; syncTools(); applyCursor();
+    setStatus("ok", "Image added — drag to move, corner to resize"); commit(true);
   }
-  function addImageFromBlob(blob, cx, cy) {
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const maxW = (canvas.width / dpr) * 0.7, maxH = (canvas.height / dpr) * 0.7;
-      let w = img.naturalWidth, h = img.naturalHeight;
-      const scale = Math.min(1, maxW / w, maxH / h); w *= scale; h *= scale;
-      const c = (cx != null) ? { x: cx, y: cy } : center();
-      items.push({ type: "image", img, x: c.x - w / 2, y: c.y - h / 2, w, h });
-      state.tool = "select"; selected = items[items.length - 1]; syncTools(); applyCursor();
-      setStatus("ok", "Image added — drag to move, corner to resize");
-      commit(true);
-    };
-    img.src = url;
-  }
+  function addImageFromBlob(blob, wx, wy) { const url = URL.createObjectURL(blob); const img = new Image(); img.onload = () => placeImage(img, wx, wy); img.src = url; }
+  function addImageFromSrc(src, wx, wy) { const img = new Image(); img.onload = () => placeImage(img, wx, wy); img.src = src; }
   function addTextBlock(text) {
-    const c = center();
+    const c = viewCenterWorld();
     const it = { type: "text", text, x: c.x, y: c.y, size: 24, color: state.color };
     measureText(it); it.x -= it._w / 2; it.y -= it._h / 2;
     items.push(it); state.tool = "select"; selected = it; syncTools(); applyCursor();
     setStatus("ok", "Text added"); commit(true);
   }
 
-  fileInput.addEventListener("change", () => {
-    for (const f of fileInput.files) if (f.type.startsWith("image/")) addImageFromBlob(f);
-    fileInput.value = "";
-  });
+  fileInput.addEventListener("change", () => { for (const f of fileInput.files) if (f.type.startsWith("image/")) addImageFromBlob(f); fileInput.value = ""; });
   document.getElementById("addimg").addEventListener("click", () => fileInput.click());
 
-  // paste (⌘V) — image or text
   window.addEventListener("paste", (e) => {
     if (document.activeElement && document.activeElement.classList.contains("txt-editor")) return;
-    const dt = e.clipboardData; if (!dt) return;
-    let handled = false;
-    for (const item of dt.items) {
-      if (item.type.startsWith("image/")) { const b = item.getAsFile(); if (b) { addImageFromBlob(b); handled = true; } }
-    }
-    if (!handled) {
-      const t = dt.getData("text/plain");
-      if (t && t.trim()) { addTextBlock(t.trim()); handled = true; }
-    }
+    const dt = e.clipboardData; if (!dt) return; let handled = false;
+    for (const item of dt.items) if (item.type.startsWith("image/")) { const b = item.getAsFile(); if (b) { addImageFromBlob(b); handled = true; } }
+    if (!handled) { const t = dt.getData("text/plain"); if (t && t.trim()) { addTextBlock(t.trim()); handled = true; } }
     if (handled) e.preventDefault();
   });
 
-  // drag & drop image files
-  ["dragenter", "dragover"].forEach((ev) => sheet.addEventListener(ev, (e) => { e.preventDefault(); sheet.classList.add("drop"); }));
-  ["dragleave", "drop"].forEach((ev) => sheet.addEventListener(ev, (e) => { e.preventDefault(); if (ev === "dragleave" && e.target !== sheet) return; sheet.classList.remove("drop"); }));
-  sheet.addEventListener("drop", (e) => {
-    const r = canvas.getBoundingClientRect();
-    const cx = e.clientX - r.left, cy = e.clientY - r.top;
-    for (const f of e.dataTransfer.files) if (f.type.startsWith("image/")) addImageFromBlob(f, cx, cy);
+  ["dragenter", "dragover"].forEach((ev) => canvas.addEventListener(ev, (e) => { e.preventDefault(); }));
+  canvas.addEventListener("drop", (e) => {
+    e.preventDefault(); const p = pos(e); const wp = toWorld(p.x, p.y);
+    for (const f of e.dataTransfer.files) if (f.type.startsWith("image/")) addImageFromBlob(f, wp.x, wp.y);
     const uri = e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain");
-    if (!e.dataTransfer.files.length && uri && /^https?:|^data:/.test(uri)) addImageFromSrc(uri, cx, cy);
+    if (!e.dataTransfer.files.length && uri && /^https?:|^data:/.test(uri)) addImageFromSrc(uri, wp.x, wp.y);
   });
 
   // ---------- clipboard out ----------
   let statusTimer = null;
   function setStatus(kind, text) {
     statusEl.classList.remove("ok", "err");
-    if (kind === "ok") statusEl.classList.add("ok");
-    if (kind === "err") statusEl.classList.add("err");
+    if (kind === "ok") statusEl.classList.add("ok"); if (kind === "err") statusEl.classList.add("err");
     statusText.textContent = text;
     if (statusTimer) clearTimeout(statusTimer);
-    if (kind === "ok" || kind === "err") {
-      statusTimer = setTimeout(() => {
-        statusEl.classList.remove("ok", "err");
-        statusText.textContent = state.autocopy ? "Auto-copy is on" : "Auto-copy is off";
-      }, 2200);
-    }
+    if (kind === "ok" || kind === "err") statusTimer = setTimeout(() => {
+      statusEl.classList.remove("ok", "err"); statusText.textContent = state.autocopy ? "Auto-copy is on" : "Auto-copy is off";
+    }, 2200);
   }
   function copyToClipboard(auto) {
     if (!items.length) { setStatus("neutral", "Nothing to copy yet"); return; }
-    render(false); // snapshot without selection handles
-    if (!navigator.clipboard || !window.ClipboardItem) { copyFailed({ name: "unsupported" }); render(); return; }
-    // Hand the blob to ClipboardItem as a Promise so write() starts *inside* the
-    // click/pointer gesture. Awaiting toBlob first loses the gesture and Safari
-    // & Chrome silently drop the copy — this is the reliable pattern.
-    const blobPromise = new Promise((resolve, reject) => {
-      canvas.toBlob((b) => b ? resolve(b) : reject(new Error("encode-failed")), "image/png");
-    });
+    if (!navigator.clipboard || !window.ClipboardItem) { copyFailed({ name: "unsupported" }); return; }
+    const off = renderExport();
+    const blobPromise = new Promise((resolve, reject) => off.toBlob((b) => b ? resolve(b) : reject(new Error("encode-failed")), "image/png"));
     try {
       navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })])
         .then(() => setStatus("ok", auto ? "Copied ✓  paste into Claude with ⌘V" : "Copied ✓  ready to paste"))
-        .catch(copyFailed)
-        .finally(() => render()); // restore handles after the snapshot is taken
-    } catch (err) {
-      copyFailed(err); render();
-    }
+        .catch(copyFailed);
+    } catch (err) { copyFailed(err); }
   }
-  function copyFailed(err) {
-    const name = (err && (err.name || err.message)) || "error";
-    setStatus("err", "Copy blocked (" + name + ") — use Save PNG instead");
-  }
+  function copyFailed(err) { const name = (err && (err.name || err.message)) || "error"; setStatus("err", "Copy blocked (" + name + ") — use Save PNG instead"); }
   function savePng() {
     if (!items.length) { setStatus("neutral", "Nothing to save yet"); return; }
-    render(false);
-    canvas.toBlob((b) => {
-      render();
+    renderExport().toBlob((b) => {
       if (!b) { setStatus("err", "Could not render image"); return; }
-      const url = URL.createObjectURL(b);
-      const a = document.createElement("a");
-      a.href = url; a.download = "sketch.png";
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setStatus("ok", "Saved sketch.png — drag it into Claude");
+      const url = URL.createObjectURL(b); const a = document.createElement("a");
+      a.href = url; a.download = "sketch.png"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500); setStatus("ok", "Saved sketch.png — drag it into Claude");
     }, "image/png");
   }
-  // a change happened: redraw + maybe copy
-  function commit(auto) {
-    render();
-    if (auto && state.autocopy) copyToClipboard(true);
-  }
+  function commit(auto) { render(); if (auto && state.autocopy) copyToClipboard(true); }
 
-  // ---------- toolbar wiring ----------
+  // ---------- toolbar ----------
+  function applyCursor() {
+    canvas.style.cursor = state.tool === "pen" ? "crosshair"
+      : state.tool === "eraser" ? "cell"
+      : state.tool === "text" ? "text"
+      : state.tool === "hand" ? "grab" : "default";
+  }
   function syncTools() {
     document.querySelectorAll("[data-tool]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tool === state.tool));
-    if (state.tool !== "select") { selected = null; }
+    if (state.tool !== "select") selected = null;
   }
-  document.querySelectorAll("[data-tool]").forEach((b) => {
-    b.addEventListener("click", () => { state.tool = b.dataset.tool; syncTools(); applyCursor(); render(); });
-  });
-  document.querySelectorAll(".swatch").forEach((b) => {
-    b.addEventListener("click", () => {
-      state.color = b.dataset.color;
-      document.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", s === b));
-      if (selected && selected.type === "text") { selected.color = state.color; commit(true); }
-    });
-  });
-  document.querySelectorAll(".size").forEach((b) => {
-    b.addEventListener("click", () => {
-      state.size = Number(b.dataset.size);
-      document.querySelectorAll(".size").forEach((s) => s.setAttribute("aria-pressed", s === b));
-    });
-  });
+  function pickTool(t) { state.tool = t; syncTools(); applyCursor(); render(); }
+  document.querySelectorAll("[data-tool]").forEach((b) => b.addEventListener("click", () => pickTool(b.dataset.tool)));
+  document.querySelectorAll(".swatch").forEach((b) => b.addEventListener("click", () => {
+    state.color = b.dataset.color;
+    document.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", s === b));
+    if (selected && selected.type === "text") { selected.color = state.color; commit(true); }
+  }));
+  document.querySelectorAll(".size").forEach((b) => b.addEventListener("click", () => {
+    state.size = Number(b.dataset.size);
+    document.querySelectorAll(".size").forEach((s) => s.setAttribute("aria-pressed", s === b));
+  }));
   document.getElementById("undo").addEventListener("click", doUndo);
   function doUndo() {
     if (editor) { cancelEditor(); return; }
     items.pop(); selected = null; render();
-    if (items.length && state.autocopy) copyToClipboard(true);
-    else setStatus("neutral", items.length ? "Undid last item" : "Board is empty");
+    if (items.length && state.autocopy) copyToClipboard(true); else setStatus("neutral", items.length ? "Undid last item" : "Canvas is empty");
   }
-  document.getElementById("clear").addEventListener("click", () => {
-    items.length = 0; selected = null; render(); setStatus("neutral", "Cleared");
-  });
+  document.getElementById("clear").addEventListener("click", () => { items.length = 0; selected = null; render(); setStatus("neutral", "Cleared"); });
   const autoInput = document.getElementById("autocopy");
-  autoInput.addEventListener("change", () => {
-    state.autocopy = autoInput.checked;
-    setStatus("neutral", state.autocopy ? "Auto-copy is on" : "Auto-copy is off");
-  });
+  autoInput.addEventListener("change", () => { state.autocopy = autoInput.checked; setStatus("neutral", state.autocopy ? "Auto-copy is on" : "Auto-copy is off"); });
   document.getElementById("copynow").addEventListener("click", () => copyToClipboard(false));
   document.getElementById("savepng").addEventListener("click", savePng);
 
-  // keyboard
+  // ---------- keyboard ----------
   window.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !spaceDown) { const a = document.activeElement; if (!(a && a.classList.contains("txt-editor"))) { spaceDown = true; if (!mode) canvas.style.cursor = "grab"; } }
     const inEditor = document.activeElement && document.activeElement.classList.contains("txt-editor");
     if (inEditor) return;
     const meta = e.metaKey || e.ctrlKey;
     if (meta && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); }
     else if (meta && e.key.toLowerCase() === "c") { e.preventDefault(); copyToClipboard(false); }
-    else if ((e.key === "Delete" || e.key === "Backspace") && selected) {
-      e.preventDefault();
-      const i = items.indexOf(selected);
-      if (i >= 0) items.splice(i, 1);
-      selected = null; commit(true);
+    else if (meta && (e.key === "=" || e.key === "+")) { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale * 1.25); }
+    else if (meta && e.key === "-") { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale / 1.25); }
+    else if (meta && e.key === "0") { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, 1); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && selected) { e.preventDefault(); const i = items.indexOf(selected); if (i >= 0) items.splice(i, 1); selected = null; commit(true); }
+    else if (e.key === "1" && !meta) fitToContent();
+    else if (!meta && "ptmhe".includes(e.key.toLowerCase())) {
+      const map = { p: "pen", t: "text", m: "select", h: "hand", e: "eraser" }; pickTool(map[e.key.toLowerCase()]);
     }
-    else if (e.key === "v" && !meta) { /* let native paste handle ⌘V */ }
-    else if (e.key === "p" && !meta) { state.tool = "pen"; syncTools(); applyCursor(); render(); }
-    else if (e.key === "t" && !meta) { state.tool = "text"; syncTools(); applyCursor(); render(); }
-    else if (e.key === "m" && !meta) { state.tool = "select"; syncTools(); applyCursor(); render(); }
-    else if (e.key === "e" && !meta) { state.tool = "eraser"; syncTools(); applyCursor(); render(); }
   });
+  window.addEventListener("keyup", (e) => { if (e.code === "Space") { spaceDown = false; if (!mode) applyCursor(); } });
 
+  // ---------- init ----------
   window.addEventListener("resize", resize);
-  applyCursor();
-  resize();
+  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { refreshColors(); render(); });
+  refreshColors(); applyCursor(); updateZoomLabel(); resize();
 })();
 </script>

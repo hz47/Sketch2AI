@@ -12,7 +12,8 @@ Try it here: https://hz47.github.io/Sketch2AI/
 - Paste a screenshot or copied text right onto the board with Cmd+V.
 - Drag image files in from Finder.
 - Add text notes, then move and resize anything.
-- Every time you finish a stroke or change something, the whole board is copied to your clipboard. Then you just paste it into Claude.
+- Work on an endless canvas. Scroll to pan, pinch or Cmd+scroll to zoom, and keep adding content wherever you like.
+- Every time you finish a stroke or change something, the whole drawing is copied to your clipboard, cropped to your content. Then you just paste it into Claude.
 
 There is also a "Copy now" button if you turn off auto-copy, and a "Save PNG" button that downloads the board as a file.
 
@@ -39,10 +40,13 @@ Pasting an image works in the Claude desktop app and on claude.ai. It does not w
 - `P` pen
 - `T` text
 - `M` move and resize
+- `H` pan (or hold Space and drag, or drag with the middle mouse button)
 - `E` eraser
+- `1` fit everything in view
+- `Cmd +` / `Cmd -` / `Cmd 0` zoom in, out, reset to 100%
 - `Cmd+Z` undo the last thing you added
-- `Cmd+C` copy the board now
-- `Cmd+V` paste an image or text onto the board
+- `Cmd+C` copy the drawing now
+- `Cmd+V` paste an image or text onto the canvas
 - `Delete` remove the selected item
 
 ## Built with
