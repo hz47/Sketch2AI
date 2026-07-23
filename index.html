@@ -404,22 +404,30 @@
     ctx.fillStyle = gridColor;
     for (let x = x0; x <= br.x; x += step) for (let y = y0; y <= br.y; y += step) { const s = toScreen(x, y); ctx.fillRect(s.x - 0.75, s.y - 0.75, 1.5, 1.5); }
   }
-  function drawPorts() {
-    // While dragging a connection, highlight the box the cursor is over.
-    if (mode === "connect" && connectTarget) {
-      const b = bounds(connectTarget), p = toScreen(b.x, b.y);
-      ctx.save(); ctx.strokeStyle = accentColor; ctx.lineWidth = 2;
-      ctx.strokeRect(p.x - 2, p.y - 2, b.w * view.scale + 4, b.h * view.scale + 4); ctx.restore();
-    }
-    // On hover (not mid-drag), show the four connection points on the box.
-    const box = mode ? null : hoverBox;
-    if (!box || box.type !== "shape") return;
-    ctx.save();
+  function drawPortDots(box) {
     for (const pt of boxPorts(box)) {
       const s = toScreen(pt.x, pt.y);
       ctx.fillStyle = accentColor; ctx.beginPath(); ctx.arc(s.x, s.y, 4.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, Math.PI * 2); ctx.fill();
     }
+  }
+  function draggingConnection() {
+    return mode === "connect" ||
+      (mode === "resize" && grab && grab.it && grab.it.type === "shape"
+        && (grab.it.kind === "line" || grab.it.kind === "arrow"));
+  }
+  function drawPorts() {
+    ctx.save();
+    // While dragging a connection: highlight the target box and show its ports.
+    if (draggingConnection() && connectTarget) {
+      const b = bounds(connectTarget), p = toScreen(b.x, b.y);
+      ctx.strokeStyle = accentColor; ctx.lineWidth = 2;
+      ctx.strokeRect(p.x - 2, p.y - 2, b.w * view.scale + 4, b.h * view.scale + 4);
+      drawPortDots(connectTarget);
+    }
+    // When idle, show connection points on the hovered box.
+    const box = mode ? null : hoverBox;
+    if (box && box.type === "shape") drawPortDots(box);
     ctx.restore();
   }
   function drawSelectionOverlay() {
@@ -574,6 +582,11 @@
         mode = "resize"; canvas.setPointerCapture(e.pointerId);
         const b = bounds(single);
         grab = { it: single, h, w0: b.w, h0: b.h, x0: b.x, y0: b.y, size0: single.size, ratio: b.h / (b.w || 1) };
+        // Grabbing a connected arrow's end detaches it so it follows the cursor;
+        // it reconnects on release if dropped on a box (draw.io re-routing).
+        if (single.type === "shape" && (single.kind === "line" || single.kind === "arrow")) {
+          if (h === "e1") delete single.from; else if (h === "e2") delete single.to;
+        }
       } else {
         const hit = hitItem(p.x, p.y);
         if (e.shiftKey && hit) { const i = selection.indexOf(hit); if (i >= 0) selection.splice(i, 1); else selection.push(hit); render(); return; }
@@ -606,7 +619,13 @@
       for (const { it, s } of grab.snaps) applyPos(it, s, dx, dy);
       render();
     } else if (mode === "resize") {
-      resizeItem(grab, wp, e.shiftKey); render();
+      resizeItem(grab, wp, e.shiftKey);
+      if (grab.it.type === "shape" && (grab.it.kind === "line" || grab.it.kind === "arrow")) {
+        const ex = grab.h === "e1" ? grab.it.x1 : grab.it.x2, ey = grab.h === "e1" ? grab.it.y1 : grab.it.y2;
+        const other = grab.h === "e1" ? grab.it.to : grab.it.from, tgt = boxAt(ex, ey);
+        connectTarget = (tgt && tgt.id !== other) ? tgt : null;
+      }
+      render();
     } else if (mode === "marquee") {
       marquee.x1 = p.x; marquee.y1 = p.y; updateMarquee(); render();
     } else if (mode === "connect") {
@@ -677,12 +696,20 @@
     } else { selectOnly(sh); setStatus("neutral", "Loose end — drop it on a box to link"); }
     connectTarget = null;
   }
+  function reconnectEnd(it, h) {
+    if (h === "e1") { const t = boxAt(it.x1, it.y1); if (t && t.id !== it.to) { it.from = ensureId(t); setStatus("ok", "Re-linked ✓"); } }
+    else { const t = boxAt(it.x2, it.y2); if (t && t.id !== it.from) { it.to = ensureId(t); setStatus("ok", "Re-linked ✓"); } }
+  }
   function endPointer() {
     if (!mode) return;
     let changed = mode === "draw" || mode === "move" || mode === "resize";
     if (mode === "create") { finalizeCreate(); changed = true; }
     if (mode === "connect") { finalizeConnect(); changed = true; }
+    if (mode === "resize" && grab && grab.it.type === "shape" && (grab.it.kind === "line" || grab.it.kind === "arrow") && (grab.h === "e1" || grab.h === "e2")) {
+      reconnectEnd(grab.it, grab.h);
+    }
     if (mode === "marquee") marquee = null;
+    connectTarget = null;
     mode = null; cur = null; grab = null; panStart = null;
     applyCursor();
     if (changed) commit(true); else render();
