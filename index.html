@@ -404,6 +404,24 @@
     ctx.fillStyle = gridColor;
     for (let x = x0; x <= br.x; x += step) for (let y = y0; y <= br.y; y += step) { const s = toScreen(x, y); ctx.fillRect(s.x - 0.75, s.y - 0.75, 1.5, 1.5); }
   }
+  function drawPorts() {
+    // While dragging a connection, highlight the box the cursor is over.
+    if (mode === "connect" && connectTarget) {
+      const b = bounds(connectTarget), p = toScreen(b.x, b.y);
+      ctx.save(); ctx.strokeStyle = accentColor; ctx.lineWidth = 2;
+      ctx.strokeRect(p.x - 2, p.y - 2, b.w * view.scale + 4, b.h * view.scale + 4); ctx.restore();
+    }
+    // On hover (not mid-drag), show the four connection points on the box.
+    const box = mode ? null : hoverBox;
+    if (!box || box.type !== "shape") return;
+    ctx.save();
+    for (const pt of boxPorts(box)) {
+      const s = toScreen(pt.x, pt.y);
+      ctx.fillStyle = accentColor; ctx.beginPath(); ctx.arc(s.x, s.y, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
   function drawSelectionOverlay() {
     ctx.save();
     ctx.strokeStyle = accentColor; ctx.fillStyle = accentColor;
@@ -444,6 +462,18 @@
       const it = items[i];
       if (it.type === "shape" && (it.kind === "rect" || it.kind === "ellipse")
           && wx >= it.x && wx <= it.x + it.w && wy >= it.y && wy <= it.y + it.h) return it;
+    }
+    return null;
+  }
+  // Connection points (draw.io style): the four edge midpoints of a box.
+  function boxPorts(b) {
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    return [{ x: cx, y: b.y }, { x: b.x + b.w, y: cy }, { x: cx, y: b.y + b.h }, { x: b.x, y: cy }];
+  }
+  function portHit(box, sx, sy) {
+    for (const pt of boxPorts(box)) {
+      const s = toScreen(pt.x, pt.y);
+      if (Math.hypot(sx - s.x, sy - s.y) <= 11) return pt;
     }
     return null;
   }
@@ -489,7 +519,7 @@
     screenT(); ctx.fillStyle = SHEET; ctx.fillRect(0, 0, v.w, v.h); drawGrid();
     worldT(); for (const it of items) drawItem(ctx, it);
     screenT();
-    if (overlay) { if (selection.length) drawSelectionOverlay(); if (marquee) drawMarquee(); }
+    if (overlay) { if (selection.length) drawSelectionOverlay(); if (marquee) drawMarquee(); drawPorts(); }
     hint.style.display = items.length ? "none" : "";
   }
   function refreshColors() {
@@ -506,6 +536,7 @@
 
   // ---------- pointer ----------
   let mode = null, cur = null, grab = null, panStart = null, spaceDown = false;
+  let hoverBox = null, connectTarget = null;  // draw.io-style connection state
   function pos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function isSel(it) { return selection.indexOf(it) >= 0; }
   function selectOnly(it) { selection = it ? [it] : []; }
@@ -529,6 +560,14 @@
       else cur = { type: "shape", kind: t, id: freshId(), x: wp.x, y: wp.y, w: 0, h: 0, color: state.color, size: state.size };
       items.push(cur); render();
     } else if (t === "select") {
+      // draw.io connect: pressing a connection port starts a live connector.
+      const srcBox = hoverBox || boxAt(wp.x, wp.y);
+      const port = srcBox ? portHit(srcBox, p.x, p.y) : null;
+      if (port) {
+        mode = "connect"; canvas.setPointerCapture(e.pointerId);
+        cur = { type: "shape", kind: "arrow", from: ensureId(srcBox), x1: port.x, y1: port.y, x2: wp.x, y2: wp.y, color: state.color, size: state.size };
+        items.push(cur); render(); return;
+      }
       const single = selection.length === 1 ? selection[0] : null;
       const h = single ? handleAt(single, p.x, p.y) : null;
       if (h) {
@@ -570,12 +609,21 @@
       resizeItem(grab, wp, e.shiftKey); render();
     } else if (mode === "marquee") {
       marquee.x1 = p.x; marquee.y1 = p.y; updateMarquee(); render();
+    } else if (mode === "connect") {
+      cur.x2 = wp.x; cur.y2 = wp.y;
+      const tgt = boxAt(wp.x, wp.y);
+      connectTarget = (tgt && tgt.id !== cur.from) ? tgt : null;
+      render();
     } else if (state.tool === "select") {
+      const nb = boxAt(wp.x, wp.y);
+      if (nb !== hoverBox) { hoverBox = nb; render(); }
       const single = selection.length === 1 ? selection[0] : null;
       const h = single ? handleAt(single, p.x, p.y) : null;
-      canvas.style.cursor = h === "br" ? "nwse-resize" : h ? "move" : hitItem(p.x, p.y) ? "move" : "default";
+      const onPort = hoverBox && portHit(hoverBox, p.x, p.y);
+      canvas.style.cursor = onPort ? "crosshair" : h === "br" ? "nwse-resize" : h ? "move" : hitItem(p.x, p.y) ? "move" : "default";
     }
   });
+  canvas.addEventListener("pointerleave", () => { if (hoverBox && !mode) { hoverBox = null; render(); } });
 
   function updateCreate(wp, shift) {
     if (cur.kind === "line" || cur.kind === "arrow") {
@@ -620,10 +668,20 @@
     const hits = items.filter((it) => { if (!selectable(it)) return false; const bx = bounds(it); return bx.x < b.x && bx.x + bx.w > a.x && bx.y < b.y && bx.y + bx.h > a.y; });
     selection = marquee.add ? marquee.base.concat(hits.filter((h) => marquee.base.indexOf(h) < 0)) : hits;
   }
+  function finalizeConnect() {
+    const sh = cur;
+    const target = boxAt(sh.x2, sh.y2);
+    if (target && target.id !== sh.from) { sh.to = ensureId(target); selectOnly(sh); setStatus("ok", "Connected ✓ — move a box and it follows"); }
+    else if (Math.hypot(sh.x2 - sh.x1, sh.y2 - sh.y1) < 8) {
+      const i = items.indexOf(sh); if (i >= 0) items.splice(i, 1); selection = [];  // a click, not a drag
+    } else { selectOnly(sh); setStatus("neutral", "Loose end — drop it on a box to link"); }
+    connectTarget = null;
+  }
   function endPointer() {
     if (!mode) return;
     let changed = mode === "draw" || mode === "move" || mode === "resize";
     if (mode === "create") { finalizeCreate(); changed = true; }
+    if (mode === "connect") { finalizeConnect(); changed = true; }
     if (mode === "marquee") marquee = null;
     mode = null; cur = null; grab = null; panStart = null;
     applyCursor();

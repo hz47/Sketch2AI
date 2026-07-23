@@ -60,6 +60,22 @@ labels), serves the board, and opens it with `?diagram=1`.
 - Separate from the draw bridge: own pidfile, own single-instance guard, same
   local-macOS-only fail-fast. The `/sketch` path is untouched.
 
+### Connected arrows (draw.io-style)
+
+Boxes (`rect`/`ellipse`) carry a stable `id`; arrows and labels carry `from`/`to`
+referencing those ids. `refreshConnectors()` runs before every render/export and
+re-routes connected items to the current box boundaries, so moving or resizing a
+box drags its arrows and labels along. It handles both-ends-attached and
+one-end-attached (the free end stays put). Items without `from`/`to` are never
+touched, so hand drawing does not regress.
+
+Two ways to connect, both in select mode:
+- Hover a box → four connection ports (edge midpoints) appear; drag from a port
+  onto another box to create a connector (`boxPorts`/`portHit`/`drawPorts`, and
+  the `connect` pointer mode / `finalizeConnect`).
+- Draw an arrow with the arrow tool whose ends land on boxes — `finalizeCreate`
+  attaches it the same way.
+
 ## Run and test
 
 Open `index.html` in Chrome, or serve the folder:
