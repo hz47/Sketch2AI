@@ -473,15 +473,15 @@
     }
     return null;
   }
-  // Connection points (draw.io style): the four edge midpoints of a box.
-  function boxPorts(b) {
-    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-    return [{ x: cx, y: b.y }, { x: b.x + b.w, y: cy }, { x: cx, y: b.y + b.h }, { x: b.x, y: cy }];
-  }
+  // Connection points (draw.io style): the four edge midpoints, stored as
+  // normalized {nx,ny} anchors so a fixed port stays at the same spot on a box.
+  const PORT_ANCHORS = [{ nx: 0.5, ny: 0 }, { nx: 1, ny: 0.5 }, { nx: 0.5, ny: 1 }, { nx: 0, ny: 0.5 }];
+  function anchorPoint(box, a) { return { x: box.x + a.nx * box.w, y: box.y + a.ny * box.h }; }
+  function boxPorts(b) { return PORT_ANCHORS.map((a) => anchorPoint(b, a)); }
   function portHit(box, sx, sy) {
-    for (const pt of boxPorts(box)) {
-      const s = toScreen(pt.x, pt.y);
-      if (Math.hypot(sx - s.x, sy - s.y) <= 11) return pt;
+    for (const a of PORT_ANCHORS) {
+      const s = toScreen(box.x + a.nx * box.w, box.y + a.ny * box.h);
+      if (Math.hypot(sx - s.x, sy - s.y) <= 11) return a;  // the normalized anchor
     }
     return null;
   }
@@ -495,6 +495,14 @@
     const s = Math.min(hw / Math.abs(dx), hh / Math.abs(dy));
     return { x: cx + dx * s, y: cy + dy * s };
   }
+  // One connector endpoint. A fixed port (myPort) pins to that exact spot; a
+  // floating end routes to the box boundary aimed at the other end's real point.
+  function endpointPoint(box, myPort, otherBox, otherPort) {
+    if (myPort) return anchorPoint(box, myPort);
+    const target = otherPort ? anchorPoint(otherBox, otherPort)
+      : { x: otherBox.x + otherBox.w / 2, y: otherBox.y + otherBox.h / 2 };
+    return boundaryPoint(box, target.x, target.y);
+  }
   function refreshConnectors() {
     let byId = null;
     for (const it of items) {
@@ -505,19 +513,21 @@
       const aok = a && a.type === "shape", bok = b && b.type === "shape";
       if (it.type === "text") {
         if (!aok || !bok) continue;  // labels sit at the midpoint of both ends
-        const p1 = boundaryPoint(a, b.x + b.w / 2, b.y + b.h / 2);
-        const p2 = boundaryPoint(b, a.x + a.w / 2, a.y + a.h / 2);
+        const p1 = endpointPoint(a, it.fromPort, b, it.toPort);
+        const p2 = endpointPoint(b, it.toPort, a, it.fromPort);
         measureText(it); it.x = (p1.x + p2.x) / 2 - it._w / 2; it.y = (p1.y + p2.y) / 2 - it._h / 2;
         continue;
       }
       if (aok && bok) {
-        const p1 = boundaryPoint(a, b.x + b.w / 2, b.y + b.h / 2);
-        const p2 = boundaryPoint(b, a.x + a.w / 2, a.y + a.h / 2);
+        const p1 = endpointPoint(a, it.fromPort, b, it.toPort);
+        const p2 = endpointPoint(b, it.toPort, a, it.fromPort);
         it.x1 = p1.x; it.y1 = p1.y; it.x2 = p2.x; it.y2 = p2.y;
       } else if (aok) {                       // start attached, free end stays put
-        const p1 = boundaryPoint(a, it.x2, it.y2); it.x1 = p1.x; it.y1 = p1.y;
+        const p1 = it.fromPort ? anchorPoint(a, it.fromPort) : boundaryPoint(a, it.x2, it.y2);
+        it.x1 = p1.x; it.y1 = p1.y;
       } else if (bok) {                       // end attached, free start stays put
-        const p2 = boundaryPoint(b, it.x1, it.y1); it.x2 = p2.x; it.y2 = p2.y;
+        const p2 = it.toPort ? anchorPoint(b, it.toPort) : boundaryPoint(b, it.x1, it.y1);
+        it.x2 = p2.x; it.y2 = p2.y;
       }
     }
   }
@@ -568,39 +578,42 @@
       else cur = { type: "shape", kind: t, id: freshId(), x: wp.x, y: wp.y, w: 0, h: 0, color: state.color, size: state.size };
       items.push(cur); render();
     } else if (t === "select") {
-      // draw.io connect: pressing a connection port starts a live connector.
-      const srcBox = hoverBox || boxAt(wp.x, wp.y);
-      const port = srcBox ? portHit(srcBox, p.x, p.y) : null;
-      if (port) {
-        mode = "connect"; canvas.setPointerCapture(e.pointerId);
-        cur = { type: "shape", kind: "arrow", from: ensureId(srcBox), x1: port.x, y1: port.y, x2: wp.x, y2: wp.y, color: state.color, size: state.size };
-        items.push(cur); render(); return;
-      }
       const single = selection.length === 1 ? selection[0] : null;
       const h = single ? handleAt(single, p.x, p.y) : null;
+      // 1) A selected arrow's endpoint wins over ports, so it can be re-routed
+      //    even though the endpoint sits on a box edge.
       if (h) {
         mode = "resize"; canvas.setPointerCapture(e.pointerId);
         const b = bounds(single);
         grab = { it: single, h, w0: b.w, h0: b.h, x0: b.x, y0: b.y, size0: single.size, ratio: b.h / (b.w || 1) };
-        // Grabbing a connected arrow's end detaches it so it follows the cursor;
-        // it reconnects on release if dropped on a box (draw.io re-routing).
         if (single.type === "shape" && (single.kind === "line" || single.kind === "arrow")) {
-          if (h === "e1") delete single.from; else if (h === "e2") delete single.to;
+          if (h === "e1") { delete single.from; delete single.fromPort; }
+          else if (h === "e2") { delete single.to; delete single.toPort; }
         }
-      } else {
-        const hit = hitItem(p.x, p.y);
-        if (e.shiftKey && hit) { const i = selection.indexOf(hit); if (i >= 0) selection.splice(i, 1); else selection.push(hit); render(); return; }
-        if (hit) {
-          if (!isSel(hit)) selectOnly(hit);
-          mode = "move"; canvas.setPointerCapture(e.pointerId);
-          grab = { ox: wp.x, oy: wp.y, snaps: selection.map((it) => ({ it, s: snapPos(it) })) };
-        } else {
-          if (!e.shiftKey) selection = [];
-          mode = "marquee"; canvas.setPointerCapture(e.pointerId);
-          marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, add: e.shiftKey, base: selection.slice() };
-        }
-        render();
+        return;
       }
+      // 2) Pressing a connection port on a box starts a live connector.
+      const srcBox = hoverBox || boxAt(wp.x, wp.y);
+      const srcPort = srcBox ? portHit(srcBox, p.x, p.y) : null;
+      if (srcPort) {
+        mode = "connect"; canvas.setPointerCapture(e.pointerId);
+        const s = anchorPoint(srcBox, srcPort);
+        cur = { type: "shape", kind: "arrow", from: ensureId(srcBox), fromPort: srcPort, x1: s.x, y1: s.y, x2: wp.x, y2: wp.y, color: state.color, size: Math.min(state.size, 3) };
+        items.push(cur); render(); return;
+      }
+      // 3) Otherwise select / move / marquee.
+      const hit = hitItem(p.x, p.y);
+      if (e.shiftKey && hit) { const i = selection.indexOf(hit); if (i >= 0) selection.splice(i, 1); else selection.push(hit); render(); return; }
+      if (hit) {
+        if (!isSel(hit)) selectOnly(hit);
+        mode = "move"; canvas.setPointerCapture(e.pointerId);
+        grab = { ox: wp.x, oy: wp.y, snaps: selection.map((it) => ({ it, s: snapPos(it) })) };
+      } else {
+        if (!e.shiftKey) selection = [];
+        mode = "marquee"; canvas.setPointerCapture(e.pointerId);
+        marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, add: e.shiftKey, base: selection.slice() };
+      }
+      render();
     }
   });
 
@@ -687,18 +700,28 @@
     const hits = items.filter((it) => { if (!selectable(it)) return false; const bx = bounds(it); return bx.x < b.x && bx.x + bx.w > a.x && bx.y < b.y && bx.y + bx.h > a.y; });
     selection = marquee.add ? marquee.base.concat(hits.filter((h) => marquee.base.indexOf(h) < 0)) : hits;
   }
+  // If the endpoint landed on a specific port dot, pin it there (fixed);
+  // otherwise attach it floating to the box. Returns whether it linked.
+  function linkEnd(it, end, target) {
+    if (!target || target.id === (end === "from" ? it.to : it.from)) return false;
+    const ex = end === "from" ? it.x1 : it.x2, ey = end === "from" ? it.y1 : it.y2;
+    const anchor = portHit(target, toScreen(ex, ey).x, toScreen(ex, ey).y);
+    if (end === "from") { it.from = ensureId(target); if (anchor) it.fromPort = anchor; else delete it.fromPort; }
+    else { it.to = ensureId(target); if (anchor) it.toPort = anchor; else delete it.toPort; }
+    return true;
+  }
   function finalizeConnect() {
     const sh = cur;
-    const target = boxAt(sh.x2, sh.y2);
-    if (target && target.id !== sh.from) { sh.to = ensureId(target); selectOnly(sh); setStatus("ok", "Connected ✓ — move a box and it follows"); }
+    if (linkEnd(sh, "to", boxAt(sh.x2, sh.y2))) { selectOnly(sh); setStatus("ok", "Connected ✓ — move a box and it follows"); }
     else if (Math.hypot(sh.x2 - sh.x1, sh.y2 - sh.y1) < 8) {
       const i = items.indexOf(sh); if (i >= 0) items.splice(i, 1); selection = [];  // a click, not a drag
     } else { selectOnly(sh); setStatus("neutral", "Loose end — drop it on a box to link"); }
     connectTarget = null;
   }
   function reconnectEnd(it, h) {
-    if (h === "e1") { const t = boxAt(it.x1, it.y1); if (t && t.id !== it.to) { it.from = ensureId(t); setStatus("ok", "Re-linked ✓"); } }
-    else { const t = boxAt(it.x2, it.y2); if (t && t.id !== it.from) { it.to = ensureId(t); setStatus("ok", "Re-linked ✓"); } }
+    const end = h === "e1" ? "from" : "to";
+    const t = h === "e1" ? boxAt(it.x1, it.y1) : boxAt(it.x2, it.y2);
+    if (linkEnd(it, end, t)) setStatus("ok", "Re-linked ✓");
   }
   function endPointer() {
     if (!mode) return;
@@ -896,7 +919,7 @@
   // ---------- editing actions ----------
   function cloneItem(it) {
     const c = Object.assign({}, it); c._w = null;
-    delete c.id; delete c.from; delete c.to;  // a copy is a plain, unlinked shape
+    delete c.id; delete c.from; delete c.to; delete c.fromPort; delete c.toPort;  // a copy is unlinked
     if (it.type === "stroke") c.points = it.points.map((p) => ({ x: p.x, y: p.y }));
     return c;
   }
