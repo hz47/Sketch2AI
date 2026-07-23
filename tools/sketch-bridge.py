@@ -12,6 +12,7 @@ requests, no dependencies beyond the Python standard library.
 import http.server
 import os
 import shutil
+import signal
 import socketserver
 import subprocess
 import sys
@@ -21,6 +22,7 @@ import threading
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX = os.path.join(ROOT, "index.html")
 TIMEOUT_S = 570  # stay under the /sketch command's 10-minute Bash ceiling
+PIDFILE = os.path.join(tempfile.gettempdir(), "sketch-bridge.pid")
 
 done = threading.Event()
 result = {"path": None}
@@ -90,6 +92,37 @@ def activate_app(name):
     )
 
 
+def _looks_like_bridge(pid):
+    """True if pid is a live process whose command line is this bridge script."""
+    try:
+        out = subprocess.run(["ps", "-p", str(pid), "-o", "command="],
+                             capture_output=True, text=True, timeout=5)
+        return "sketch-bridge.py" in out.stdout
+    except Exception:
+        return False
+
+
+def ensure_single_instance():
+    """Kill any previous bridge still waiting, then record our own pid.
+
+    Keeps at most one bridge alive so repeated /sketch calls never pile up. The
+    ps check guards against killing an unrelated process that reused the pid.
+    """
+    try:
+        if os.path.exists(PIDFILE):
+            with open(PIDFILE) as f:
+                old = int(f.read().strip())
+            if old != os.getpid() and _looks_like_bridge(old):
+                os.kill(old, signal.SIGTERM)
+    except (ValueError, ProcessLookupError, OSError):
+        pass
+    try:
+        with open(PIDFILE, "w") as f:
+            f.write(str(os.getpid()))
+    except OSError:
+        pass
+
+
 def main():
     # This bridge opens a browser on the local machine for a human to draw in, so
     # it only makes sense in a local Mac session. Fail fast (rather than hang for
@@ -103,6 +136,7 @@ def main():
     if not os.path.exists(INDEX):
         print(f"Cannot find index.html at {INDEX}", file=sys.stderr)
         sys.exit(2)
+    ensure_single_instance()  # never leave more than one bridge waiting
     caller = frontmost_app()  # capture the terminal before the browser steals focus
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("127.0.0.1", 0), Handler) as httpd:
