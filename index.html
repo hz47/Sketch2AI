@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Sketch2AI</title>
 <style>
   :root {
@@ -36,36 +37,37 @@
     display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
   }
   .rail {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 10px 14px; background: var(--panel);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 14px; background: var(--panel);
     border-bottom: 1px solid var(--line); box-shadow: var(--shadow); z-index: 5;
   }
   .brand { display: flex; align-items: baseline; gap: 8px; margin-right: 2px; }
   .brand b { font-size: 14px; letter-spacing: -.01em; }
   .group {
-    display: flex; align-items: center; gap: 6px;
-    padding-right: 12px; border-right: 1px solid var(--line);
+    display: flex; align-items: center; gap: 5px;
+    padding-right: 10px; border-right: 1px solid var(--line);
   }
   .group:last-of-type { border-right: none; padding-right: 0; }
   .swatch {
-    width: 24px; height: 24px; border-radius: 50%;
+    width: 23px; height: 23px; border-radius: 50%;
     border: 2px solid var(--line-strong); cursor: pointer; padding: 0; transition: transform .12s ease;
   }
   .swatch:hover { transform: scale(1.08); }
   .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--ink); border-color: transparent; }
   button.tool {
     font: inherit; font-size: 12.5px; color: var(--ink); background: var(--panel);
-    border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 11px;
+    border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px;
     cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
     transition: background .12s ease, border-color .12s ease, transform .06s ease;
   }
+  button.tool.icon { padding: 6px 7px; }
   button.tool:hover { border-color: var(--muted); }
   button.tool:active { transform: translateY(1px); }
   button.tool[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   button.tool.danger:hover { border-color: var(--accent); color: var(--accent); }
   button.tool svg { width: 15px; height: 15px; }
   .size {
-    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line-strong);
+    width: 29px; height: 29px; border-radius: 8px; border: 1px solid var(--line-strong);
     background: var(--panel); cursor: pointer; display: grid; place-items: center; padding: 0;
   }
   .size:hover { border-color: var(--muted); }
@@ -85,7 +87,7 @@
 
   .txt-editor {
     position: absolute; margin: 0; padding: 2px 4px; border: 1px solid var(--accent);
-    border-radius: 4px; background: rgba(255,255,255,.92); color: var(--ink);
+    border-radius: 4px; background: rgba(255,255,255,.94); color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     line-height: 1.25; resize: none; overflow: hidden; outline: none;
     box-shadow: 0 2px 10px rgba(0,0,0,.15); white-space: pre; z-index: 10; transform-origin: top left;
@@ -127,7 +129,7 @@
     border-radius: 5px; padding: 1px 5px; color: #6b7280;
   }
 
-  @media (max-width: 900px) { .brand { display: none; } .group { padding-right: 9px; gap: 5px; } }
+  @media (max-width: 1040px) { .brand { display: none; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -135,28 +137,47 @@
   <div class="brand"><b>Sketch2AI</b></div>
 
   <div class="group">
-    <button class="tool" data-tool="pen" aria-pressed="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7-4-4-7 7v4z"/><path d="M15 8l1-1"/></svg>Pen
+    <button class="tool icon" data-tool="pen" aria-pressed="true" title="Pen (P)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7-4-4-7 7v4z"/><path d="M15 8l1-1"/></svg>
     </button>
-    <button class="tool" data-tool="text" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2"/><path d="M12 4v16"/><path d="M9 20h6"/></svg>Text
+    <button class="tool icon" data-tool="highlight" aria-pressed="false" title="Highlighter (G)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-4 4v4h4l4-4"/><path d="m13 7 4 4"/><path d="M15 5l4 4-8 8-4-4z"/></svg>
     </button>
-    <button class="tool" data-tool="select" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3l7 17 2-7 7-2z"/></svg>Move
+    <button class="tool icon" data-tool="text" aria-pressed="false" title="Text (T)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6V4h14v2"/><path d="M12 4v16"/><path d="M9 20h6"/></svg>
     </button>
-    <button class="tool" data-tool="hand" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-7-4l-2.5-4a2 2 0 0 1 3.5-2L8 14"/></svg>Pan
+    <button class="tool icon" data-tool="select" aria-pressed="false" title="Move / select (M)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3l7 17 2-7 7-2z"/></svg>
     </button>
-    <button class="tool" data-tool="eraser" aria-pressed="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15l4 4h5l6-6z"/><path d="M9 19h11"/></svg>Eraser
+    <button class="tool icon" data-tool="hand" aria-pressed="false" title="Pan (H, or hold Space)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-7-4l-2.5-4a2 2 0 0 1 3.5-2L8 14"/></svg>
+    </button>
+    <button class="tool icon" data-tool="eraser" aria-pressed="false" title="Eraser (E)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15l4 4h5l6-6z"/><path d="M9 19h11"/></svg>
     </button>
   </div>
 
   <div class="group">
-    <button class="swatch" data-color="#191d24" aria-label="Black ink" aria-pressed="true" style="background:#191d24"></button>
+    <button class="tool icon" data-tool="rect" aria-pressed="false" title="Rectangle (R)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="12" rx="1.5"/></svg>
+    </button>
+    <button class="tool icon" data-tool="ellipse" aria-pressed="false" title="Ellipse (O)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg>
+    </button>
+    <button class="tool icon" data-tool="line" aria-pressed="false" title="Line (L)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 19 19 5"/></svg>
+    </button>
+    <button class="tool icon" data-tool="arrow" aria-pressed="false" title="Arrow (A)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5"/><path d="M10 5h9v9"/></svg>
+    </button>
+  </div>
+
+  <div class="group">
+    <button class="swatch" data-color="#191d24" aria-label="Black" aria-pressed="true" style="background:#191d24"></button>
     <button class="swatch" data-color="#e5484d" aria-label="Red" style="background:#e5484d"></button>
     <button class="swatch" data-color="#3b5bff" aria-label="Blue" style="background:#3b5bff"></button>
     <button class="swatch" data-color="#2ba24c" aria-label="Green" style="background:#2ba24c"></button>
+    <button class="swatch" data-color="#e8a80c" aria-label="Amber" style="background:#e8a80c"></button>
   </div>
 
   <div class="group">
@@ -166,26 +187,35 @@
   </div>
 
   <div class="group">
-    <button class="tool" id="addimg">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>Add image
+    <button class="tool icon" id="addimg" title="Add image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>
     </button>
-    <button class="tool" id="undo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10H9"/></svg>Undo
+    <button class="tool icon" id="dup" title="Duplicate selection (⌘D)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><rect x="4" y="4" width="11" height="11" rx="2"/></svg>
     </button>
-    <button class="tool danger" id="clear">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13h10l1-13"/></svg>Clear
+    <button class="tool icon" id="tofront" title="Bring to front (⌘])">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V4h12"/></svg>
+    </button>
+    <button class="tool icon" id="toback" title="Send to back (⌘[)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M20 8v12H8"/></svg>
+    </button>
+    <button class="tool icon" id="undo" title="Undo (⌘Z)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10H9"/></svg>
+    </button>
+    <button class="tool icon danger" id="clear" title="Clear the canvas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13h10l1-13"/></svg>
     </button>
   </div>
 
   <div class="spacer"></div>
 
-  <label class="toggle" title="Copy the whole drawing to your clipboard after every change">
+  <label class="toggle" title="Copy the visible canvas to your clipboard after every change">
     <input type="checkbox" id="autocopy" checked><span class="track"></span>Auto-copy
   </label>
   <button class="tool" id="copynow">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy now
   </button>
-  <button class="tool" id="savepng" title="Download the whole drawing as a PNG file">
+  <button class="tool" id="savepng" title="Download the visible canvas as a PNG">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Save PNG
   </button>
   <input type="file" id="fileinput" accept="image/*" multiple hidden>
@@ -195,10 +225,10 @@
   <canvas id="pad"></canvas>
   <div class="hint" id="hint">
     <div>
-      <b>An endless canvas for talking to Claude in pictures</b>
+      <b>A whiteboard for explaining ideas to Claude</b>
       <span>
-        Draw, <kbd>⌘V</kbd> to paste a screenshot or text, drag files in &nbsp;·&nbsp; scroll to pan, pinch or <kbd>⌘</kbd>+scroll to zoom<br>
-        Everything you make auto-copies. Paste it into Claude with <kbd>⌘V</kbd>.
+        Boxes, arrows, and labels for flows &nbsp;·&nbsp; pen &amp; highlighter for annotating &nbsp;·&nbsp; <kbd>⌘V</kbd> to paste a screenshot<br>
+        Scroll to pan, <kbd>⌘</kbd>+scroll to zoom. Everything auto-copies — paste into Claude with <kbd>⌘V</kbd>.
       </span>
     </div>
   </div>
@@ -227,14 +257,15 @@
   const SHEET = "#ffffff";
   const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
   const MIN_SCALE = 0.08, MAX_SCALE = 12;
+  const SHAPE_TOOLS = { rect: 1, ellipse: 1, line: 1, arrow: 1 };
 
   let dpr = 1, gridColor = "#d9dde3", accentColor = "#ff4d2e";
   const state = { tool: "pen", color: "#191d24", size: 6, autocopy: true };
   const view = { scale: 1, x: 0, y: 0 };   // world -> screen: p*scale + offset
   const items = [];
-  let selected = null, editor = null;
+  let selection = [], editor = null, marquee = null;
 
-  // ---------- coordinate transforms ----------
+  // ---------- transforms ----------
   function toWorld(sx, sy) { return { x: (sx - view.x) / view.scale, y: (sy - view.y) / view.scale }; }
   function toScreen(wx, wy) { return { x: wx * view.scale + view.x, y: wy * view.scale + view.y }; }
   function viewSize() { return { w: canvas.width / dpr, h: canvas.height / dpr }; }
@@ -247,33 +278,64 @@
     let w = 0; for (const ln of lines) w = Math.max(w, ctx.measureText(ln || " ").width);
     it._w = Math.ceil(w) + 6; it._h = Math.ceil(lines.length * it.size * 1.25) + 4;
   }
-  function itemBox(it) {
+  function selectable(it) { return it.type === "image" || it.type === "text" || it.type === "shape"; }
+  function bounds(it) {
     if (it.type === "image") return { x: it.x, y: it.y, w: it.w, h: it.h };
     if (it.type === "text") { if (it._w == null) measureText(it); return { x: it.x, y: it.y, w: it._w, h: it._h }; }
-    return null;
+    if (it.type === "shape") {
+      if (it.kind === "line" || it.kind === "arrow")
+        return { x: Math.min(it.x1, it.x2), y: Math.min(it.y1, it.y2), w: Math.abs(it.x2 - it.x1), h: Math.abs(it.y2 - it.y1) };
+      return { x: it.x, y: it.y, w: it.w, h: it.h };
+    }
+    if (it.type === "stroke") {
+      let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity, r = it.size / 2;
+      for (const p of it.points) { a = Math.min(a, p.x - r); b = Math.min(b, p.y - r); c = Math.max(c, p.x + r); d = Math.max(d, p.y + r); }
+      return { x: a, y: b, w: c - a, h: d - b };
+    }
+    return { x: 0, y: 0, w: 0, h: 0 };
+  }
+  function pointSeg(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
+    let t = l2 ? ((px - x1) * dx + (py - y1) * dy) / l2 : 0; t = Math.max(0, Math.min(1, t));
+    const cx = x1 + t * dx, cy = y1 + t * dy; return Math.hypot(px - cx, py - cy);
   }
   function hitItem(sx, sy) {
     const wp = toWorld(sx, sy);
     for (let i = items.length - 1; i >= 0; i--) {
-      const b = itemBox(items[i]);
-      if (b && wp.x >= b.x && wp.x <= b.x + b.w && wp.y >= b.y && wp.y <= b.y + b.h) return items[i];
+      const it = items[i]; if (!selectable(it)) continue;
+      if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) {
+        const tol = 8 / view.scale + it.size;
+        if (pointSeg(wp.x, wp.y, it.x1, it.y1, it.x2, it.y2) <= tol) return it;
+      } else {
+        const b = bounds(it);
+        if (wp.x >= b.x && wp.x <= b.x + b.w && wp.y >= b.y && wp.y <= b.y + b.h) return it;
+      }
     }
     return null;
   }
-  function onHandle(it, sx, sy) {
-    const b = itemBox(it); if (!b) return false;
-    const h = toScreen(b.x + b.w, b.y + b.h);
-    return Math.abs(sx - h.x) <= 12 && Math.abs(sy - h.y) <= 12;
+  // returns "br" for corner resize, "e1"/"e2" for endpoints, or null
+  function handleAt(it, sx, sy) {
+    if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) {
+      const a = toScreen(it.x1, it.y1), b = toScreen(it.x2, it.y2);
+      if (Math.hypot(sx - a.x, sy - a.y) <= 12) return "e1";
+      if (Math.hypot(sx - b.x, sy - b.y) <= 12) return "e2";
+      return null;
+    }
+    const bx = bounds(it), h = toScreen(bx.x + bx.w, bx.y + bx.h);
+    if (Math.abs(sx - h.x) <= 12 && Math.abs(sy - h.y) <= 12) return "br";
+    return null;
   }
 
-  // ---------- drawing primitives (target-context aware) ----------
+  // ---------- drawing ----------
   function drawStroke(g, s) {
     if (!s.points.length) return;
     g.save();
+    if (s.highlight) { g.globalCompositeOperation = "multiply"; g.globalAlpha = 0.4; g.lineWidth = s.size * 3.2; }
+    else g.lineWidth = s.size;
     g.strokeStyle = s.eraser ? SHEET : s.color; g.fillStyle = g.strokeStyle;
-    g.lineWidth = s.size; g.lineJoin = "round"; g.lineCap = "round";
+    g.lineJoin = "round"; g.lineCap = "round";
     if (s.points.length === 1) {
-      const p = s.points[0]; g.beginPath(); g.arc(p.x, p.y, s.size / 2, 0, Math.PI * 2); g.fill();
+      const p = s.points[0]; g.beginPath(); g.arc(p.x, p.y, g.lineWidth / 2, 0, Math.PI * 2); g.fill();
     } else {
       g.beginPath(); g.moveTo(s.points[0].x, s.points[0].y);
       for (let i = 1; i < s.points.length - 1; i++) {
@@ -284,21 +346,49 @@
     }
     g.restore();
   }
+  function drawShape(g, sh) {
+    g.save();
+    g.strokeStyle = sh.color; g.fillStyle = sh.color; g.lineWidth = sh.size;
+    g.lineJoin = "round"; g.lineCap = "round";
+    if (sh.kind === "rect") {
+      const r = Math.min(6, Math.abs(sh.w) / 4, Math.abs(sh.h) / 4);
+      g.beginPath();
+      if (g.roundRect) g.roundRect(sh.x, sh.y, sh.w, sh.h, r); else g.rect(sh.x, sh.y, sh.w, sh.h);
+      g.stroke();
+    } else if (sh.kind === "ellipse") {
+      g.beginPath(); g.ellipse(sh.x + sh.w / 2, sh.y + sh.h / 2, Math.abs(sh.w) / 2, Math.abs(sh.h) / 2, 0, 0, Math.PI * 2); g.stroke();
+    } else if (sh.kind === "line" || sh.kind === "arrow") {
+      g.beginPath(); g.moveTo(sh.x1, sh.y1); g.lineTo(sh.x2, sh.y2); g.stroke();
+      if (sh.kind === "arrow") {
+        const ang = Math.atan2(sh.y2 - sh.y1, sh.x2 - sh.x1), len = 10 + sh.size * 2.2;
+        g.beginPath();
+        g.moveTo(sh.x2, sh.y2); g.lineTo(sh.x2 - len * Math.cos(ang - 0.42), sh.y2 - len * Math.sin(ang - 0.42));
+        g.moveTo(sh.x2, sh.y2); g.lineTo(sh.x2 - len * Math.cos(ang + 0.42), sh.y2 - len * Math.sin(ang + 0.42));
+        g.stroke();
+      }
+    }
+    if (sh.text && (sh.kind === "rect" || sh.kind === "ellipse")) {
+      const fs = sh.textSize || 18, lines = sh.text.split("\n"), lh = fs * 1.25;
+      const cx = sh.x + sh.w / 2, cy = sh.y + sh.h / 2;
+      g.fillStyle = sh.color; g.font = fs + "px " + FONT; g.textAlign = "center"; g.textBaseline = "middle";
+      lines.forEach((ln, i) => g.fillText(ln, cx, cy + (i - (lines.length - 1) / 2) * lh));
+    }
+    g.restore();
+  }
   function drawItem(g, it) {
     if (it.type === "stroke") drawStroke(g, it);
     else if (it.type === "image") g.drawImage(it.img, it.x, it.y, it.w, it.h);
+    else if (it.type === "shape") drawShape(g, it);
     else if (it.type === "text") {
       measureText(it);
-      g.save(); g.fillStyle = it.color; g.textBaseline = "top"; g.font = it.size + "px " + FONT;
+      g.save(); g.fillStyle = it.color; g.textAlign = "left"; g.textBaseline = "top"; g.font = it.size + "px " + FONT;
       it.text.split("\n").forEach((ln, i) => g.fillText(ln, it.x + 3, it.y + 2 + i * it.size * 1.25));
       g.restore();
     }
   }
 
-  // ---------- main render ----------
   function worldT() { ctx.setTransform(view.scale * dpr, 0, 0, view.scale * dpr, view.x * dpr, view.y * dpr); }
   function screenT() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
-
   function drawGrid() {
     const v = viewSize();
     let step = 32, ss = step * view.scale;
@@ -307,39 +397,47 @@
     const tl = toWorld(0, 0), br = toWorld(v.w, v.h);
     const x0 = Math.floor(tl.x / step) * step, y0 = Math.floor(tl.y / step) * step;
     ctx.fillStyle = gridColor;
-    for (let x = x0; x <= br.x; x += step) {
-      for (let y = y0; y <= br.y; y += step) {
-        const s = toScreen(x, y);
-        ctx.fillRect(s.x - 0.75, s.y - 0.75, 1.5, 1.5);
+    for (let x = x0; x <= br.x; x += step) for (let y = y0; y <= br.y; y += step) { const s = toScreen(x, y); ctx.fillRect(s.x - 0.75, s.y - 0.75, 1.5, 1.5); }
+  }
+  function drawSelectionOverlay() {
+    ctx.save();
+    ctx.strokeStyle = accentColor; ctx.fillStyle = accentColor;
+    for (const it of selection) {
+      const b = bounds(it), p = toScreen(b.x, b.y), w = b.w * view.scale, h = b.h * view.scale;
+      ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]); ctx.strokeRect(p.x - 3, p.y - 3, w + 6, h + 6); ctx.setLineDash([]);
+    }
+    if (selection.length === 1) {
+      const it = selection[0];
+      if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) {
+        const a = toScreen(it.x1, it.y1), b = toScreen(it.x2, it.y2);
+        ctx.fillRect(a.x - 5, a.y - 5, 10, 10); ctx.fillRect(b.x - 5, b.y - 5, 10, 10);
+      } else {
+        const b = bounds(it), p = toScreen(b.x + b.w, b.y + b.h);
+        ctx.fillRect(p.x - 5, p.y - 5, 11, 11);
       }
     }
+    ctx.restore();
   }
-  function drawSelection() {
-    const b = itemBox(selected); if (!b) return;
-    const p = toScreen(b.x, b.y), w = b.w * view.scale, h = b.h * view.scale;
+  function drawMarquee() {
     ctx.save();
-    ctx.strokeStyle = accentColor; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
-    ctx.strokeRect(p.x - 3, p.y - 3, w + 6, h + 6);
-    ctx.setLineDash([]); ctx.fillStyle = accentColor;
-    ctx.fillRect(p.x + w - 5, p.y + h - 5, 11, 11);
+    const w = marquee.x1 - marquee.x0, h = marquee.y1 - marquee.y0;
+    ctx.fillStyle = accentColor; ctx.globalAlpha = 0.1; ctx.fillRect(marquee.x0, marquee.y0, w, h);
+    ctx.globalAlpha = 1; ctx.strokeStyle = accentColor; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.strokeRect(marquee.x0, marquee.y0, w, h);
     ctx.restore();
   }
   function render(overlay = true) {
     const v = viewSize();
+    screenT(); ctx.fillStyle = SHEET; ctx.fillRect(0, 0, v.w, v.h); drawGrid();
+    worldT(); for (const it of items) drawItem(ctx, it);
     screenT();
-    ctx.fillStyle = SHEET; ctx.fillRect(0, 0, v.w, v.h);
-    drawGrid();
-    worldT();
-    for (const it of items) drawItem(ctx, it);
-    screenT();
-    if (overlay && selected && state.tool === "select") drawSelection();
+    if (overlay) { if (selection.length) drawSelectionOverlay(); if (marquee) drawMarquee(); }
     hint.style.display = items.length ? "none" : "";
   }
-
   function refreshColors() {
     const cs = getComputedStyle(document.documentElement);
-    gridColor = (cs.getPropertyValue("--grid").trim() || "#d9dde3");
-    accentColor = (cs.getPropertyValue("--accent").trim() || "#ff4d2e");
+    gridColor = cs.getPropertyValue("--grid").trim() || "#d9dde3";
+    accentColor = cs.getPropertyValue("--accent").trim() || "#ff4d2e";
   }
   function resize() {
     dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
@@ -348,127 +446,187 @@
     render();
   }
 
-  // ---------- pointer input ----------
+  // ---------- pointer ----------
   let mode = null, cur = null, grab = null, panStart = null, spaceDown = false;
   function pos(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function isSel(it) { return selection.indexOf(it) >= 0; }
+  function selectOnly(it) { selection = it ? [it] : []; }
 
   canvas.addEventListener("pointerdown", (e) => {
-    const p = pos(e);
+    const p = pos(e), wp = toWorld(p.x, p.y);
     if (e.button === 1 || spaceDown || state.tool === "hand") { startPan(e); return; }
     if (e.button !== undefined && e.button !== 0) return;
     if (editor) commitEditor();
-    const wp = toWorld(p.x, p.y);
 
-    if (state.tool === "pen" || state.tool === "eraser") {
+    const t = state.tool;
+    if (t === "pen" || t === "highlight" || t === "eraser") {
       mode = "draw"; canvas.setPointerCapture(e.pointerId);
-      cur = { type: "stroke", color: state.color, size: state.size, eraser: state.tool === "eraser", points: [wp] };
-      items.push(cur); setStatus("neutral", state.tool === "eraser" ? "Erasing…" : "Drawing…"); render();
-    } else if (state.tool === "text") {
-      openEditor(wp.x, wp.y, null);
-    } else if (state.tool === "select") {
-      if (selected && onHandle(selected, p.x, p.y)) {
+      cur = { type: "stroke", color: state.color, size: state.size, eraser: t === "eraser", highlight: t === "highlight", points: [wp] };
+      items.push(cur); setStatus("neutral", t === "eraser" ? "Erasing…" : t === "highlight" ? "Highlighting…" : "Drawing…"); render();
+    } else if (t === "text") {
+      openTextEditor(wp.x, wp.y, null);
+    } else if (SHAPE_TOOLS[t]) {
+      mode = "create"; canvas.setPointerCapture(e.pointerId);
+      if (t === "line" || t === "arrow") cur = { type: "shape", kind: t, x1: wp.x, y1: wp.y, x2: wp.x, y2: wp.y, color: state.color, size: state.size };
+      else cur = { type: "shape", kind: t, x: wp.x, y: wp.y, w: 0, h: 0, color: state.color, size: state.size };
+      items.push(cur); render();
+    } else if (t === "select") {
+      const single = selection.length === 1 ? selection[0] : null;
+      const h = single ? handleAt(single, p.x, p.y) : null;
+      if (h) {
         mode = "resize"; canvas.setPointerCapture(e.pointerId);
-        const b = itemBox(selected);
-        grab = { wx: wp.x, wy: wp.y, w0: b.w, h0: b.h, s0: selected.size, ratio: b.h / b.w };
+        const b = bounds(single);
+        grab = { it: single, h, w0: b.w, h0: b.h, x0: b.x, y0: b.y, size0: single.size, ratio: b.h / (b.w || 1) };
       } else {
-        const hit = hitItem(p.x, p.y); selected = hit;
-        if (hit) { mode = "move"; canvas.setPointerCapture(e.pointerId); grab = { dx: wp.x - hit.x, dy: wp.y - hit.y }; }
+        const hit = hitItem(p.x, p.y);
+        if (e.shiftKey && hit) { const i = selection.indexOf(hit); if (i >= 0) selection.splice(i, 1); else selection.push(hit); render(); return; }
+        if (hit) {
+          if (!isSel(hit)) selectOnly(hit);
+          mode = "move"; canvas.setPointerCapture(e.pointerId);
+          grab = { ox: wp.x, oy: wp.y, snaps: selection.map((it) => ({ it, s: snapPos(it) })) };
+        } else {
+          if (!e.shiftKey) selection = [];
+          mode = "marquee"; canvas.setPointerCapture(e.pointerId);
+          marquee = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, add: e.shiftKey, base: selection.slice() };
+        }
         render();
       }
     }
   });
 
   canvas.addEventListener("pointermove", (e) => {
-    const p = pos(e);
-    if (mode === "pan") {
-      view.x = panStart.vx + (e.clientX - panStart.px); view.y = panStart.vy + (e.clientY - panStart.py); render(); return;
-    }
+    const p = pos(e), wp = toWorld(p.x, p.y);
+    if (mode === "pan") { view.x = panStart.vx + (e.clientX - panStart.px); view.y = panStart.vy + (e.clientY - panStart.py); render(); return; }
     if (mode === "draw") {
       const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       for (const ev of evs) { const q = pos(ev); cur.points.push(toWorld(q.x, q.y)); }
       worldT(); drawStroke(ctx, cur); screenT();
-    } else if (mode === "move" && selected) {
-      const wp = toWorld(p.x, p.y); selected.x = wp.x - grab.dx; selected.y = wp.y - grab.dy; render();
-    } else if (mode === "resize" && selected) {
-      const wp = toWorld(p.x, p.y);
-      if (selected.type === "image") { const nw = Math.max(20, grab.w0 + (wp.x - grab.wx)); selected.w = nw; selected.h = Math.max(20, nw * grab.ratio); }
-      else if (selected.type === "text") { selected.size = Math.max(8, Math.min(400, grab.s0 + (wp.x - grab.wx) * 0.5)); selected._w = null; }
+      if (cur.highlight) render();
+    } else if (mode === "create") {
+      updateCreate(wp, e.shiftKey); render();
+    } else if (mode === "move") {
+      const dx = wp.x - grab.ox, dy = wp.y - grab.oy;
+      for (const { it, s } of grab.snaps) applyPos(it, s, dx, dy);
       render();
+    } else if (mode === "resize") {
+      resizeItem(grab, wp, e.shiftKey); render();
+    } else if (mode === "marquee") {
+      marquee.x1 = p.x; marquee.y1 = p.y; updateMarquee(); render();
     } else if (state.tool === "select") {
-      canvas.style.cursor = (selected && onHandle(selected, p.x, p.y)) ? "nwse-resize" : (hitItem(p.x, p.y) ? "move" : "default");
+      const single = selection.length === 1 ? selection[0] : null;
+      const h = single ? handleAt(single, p.x, p.y) : null;
+      canvas.style.cursor = h === "br" ? "nwse-resize" : h ? "move" : hitItem(p.x, p.y) ? "move" : "default";
     }
   });
 
-  function startPan(e) {
-    mode = "pan"; canvas.setPointerCapture(e.pointerId);
-    panStart = { px: e.clientX, py: e.clientY, vx: view.x, vy: view.y };
-    canvas.style.cursor = "grabbing";
+  function updateCreate(wp, shift) {
+    if (cur.kind === "line" || cur.kind === "arrow") {
+      let dx = wp.x - cur.x1, dy = wp.y - cur.y1;
+      if (shift) { const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4), len = Math.hypot(dx, dy); dx = Math.cos(a) * len; dy = Math.sin(a) * len; }
+      cur.x2 = cur.x1 + dx; cur.y2 = cur.y1 + dy;
+    } else {
+      let w = wp.x - cur.x, h = wp.y - cur.y;
+      if (shift) { const s = Math.max(Math.abs(w), Math.abs(h)); w = Math.sign(w || 1) * s; h = Math.sign(h || 1) * s; }
+      cur.w = w; cur.h = h;
+    }
+  }
+  function snapPos(it) {
+    if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) return { x1: it.x1, y1: it.y1, x2: it.x2, y2: it.y2 };
+    return { x: it.x, y: it.y };
+  }
+  function applyPos(it, s, dx, dy) {
+    if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) { it.x1 = s.x1 + dx; it.y1 = s.y1 + dy; it.x2 = s.x2 + dx; it.y2 = s.y2 + dy; }
+    else { it.x = s.x + dx; it.y = s.y + dy; }
+  }
+  function resizeItem(grab, wp, shift) {
+    const it = grab.it;
+    if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) {
+      const fixed = grab.h === "e1" ? { x: it.x2, y: it.y2 } : { x: it.x1, y: it.y1 };
+      let dx = wp.x - fixed.x, dy = wp.y - fixed.y;
+      if (shift) { const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4), len = Math.hypot(dx, dy); dx = Math.cos(a) * len; dy = Math.sin(a) * len; }
+      if (grab.h === "e1") { it.x1 = fixed.x + dx; it.y1 = fixed.y + dy; } else { it.x2 = fixed.x + dx; it.y2 = fixed.y + dy; }
+    } else if (it.type === "image") {
+      const nw = Math.max(20, wp.x - it.x); it.w = nw; it.h = Math.max(20, nw * grab.ratio);
+    } else if (it.type === "text") {
+      const ratioW = (wp.x - it.x) / (grab.w0 || 1);
+      it.size = Math.max(8, Math.min(400, grab.size0 * ratioW)); it._w = null;
+    } else if (it.type === "shape") {
+      it.w = Math.max(10, wp.x - it.x); it.h = Math.max(10, wp.y - it.y);
+    }
+  }
+
+  function startPan(e) { mode = "pan"; canvas.setPointerCapture(e.pointerId); panStart = { px: e.clientX, py: e.clientY, vx: view.x, vy: view.y }; canvas.style.cursor = "grabbing"; }
+  function updateMarquee() {
+    const a = toWorld(Math.min(marquee.x0, marquee.x1), Math.min(marquee.y0, marquee.y1));
+    const b = toWorld(Math.max(marquee.x0, marquee.x1), Math.max(marquee.y0, marquee.y1));
+    const hits = items.filter((it) => { if (!selectable(it)) return false; const bx = bounds(it); return bx.x < b.x && bx.x + bx.w > a.x && bx.y < b.y && bx.y + bx.h > a.y; });
+    selection = marquee.add ? marquee.base.concat(hits.filter((h) => marquee.base.indexOf(h) < 0)) : hits;
   }
   function endPointer() {
     if (!mode) return;
-    const changed = mode === "draw" || mode === "move" || mode === "resize";
+    let changed = mode === "draw" || mode === "move" || mode === "resize";
+    if (mode === "create") { finalizeCreate(); changed = true; }
+    if (mode === "marquee") marquee = null;
     mode = null; cur = null; grab = null; panStart = null;
     applyCursor();
-    if (changed) commit(true);
+    if (changed) commit(true); else render();
   }
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
 
+  function finalizeCreate() {
+    const sh = cur;
+    if (sh.kind === "line" || sh.kind === "arrow") {
+      if (Math.hypot(sh.x2 - sh.x1, sh.y2 - sh.y1) < 4) { sh.x2 = sh.x1 + 140; sh.y2 = sh.y1; }
+    } else {
+      if (Math.abs(sh.w) < 4 && Math.abs(sh.h) < 4) { sh.w = sh.kind === "ellipse" ? 120 : 150; sh.h = sh.kind === "ellipse" ? 120 : 90; }
+      if (sh.w < 0) { sh.x += sh.w; sh.w = -sh.w; } if (sh.h < 0) { sh.y += sh.h; sh.h = -sh.h; }
+    }
+    state.tool = "select"; syncTools(); applyCursor(); selectOnly(sh);
+    setStatus("ok", (sh.kind === "rect" || sh.kind === "ellipse") ? "Shape added — double-click to label it" : "Added — drag the ends to adjust");
+  }
+
   canvas.addEventListener("dblclick", (e) => {
-    const p = pos(e); const hit = hitItem(p.x, p.y);
-    if (hit && hit.type === "text") { selected = hit; openEditor(hit.x, hit.y, hit); }
+    const p = pos(e), hit = hitItem(p.x, p.y);
+    if (!hit) return;
+    if (hit.type === "text") { selectOnly(hit); openTextEditor(hit.x, hit.y, hit); }
+    else if (hit.type === "shape" && (hit.kind === "rect" || hit.kind === "ellipse")) { selectOnly(hit); openLabelEditor(hit); }
   });
 
-  // ---------- zoom + pan via wheel ----------
+  // ---------- zoom + pan ----------
   function setScaleAt(sx, sy, ns) {
     ns = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ns));
-    const wp = toWorld(sx, sy);
-    view.scale = ns; view.x = sx - wp.x * ns; view.y = sy - wp.y * ns;
-    render(); updateZoomLabel();
+    const wp = toWorld(sx, sy); view.scale = ns; view.x = sx - wp.x * ns; view.y = sy - wp.y * ns; render(); updateZoomLabel();
   }
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
     if (e.ctrlKey || e.metaKey) { const p = pos(e); setScaleAt(p.x, p.y, view.scale * Math.exp(-e.deltaY * 0.0016)); }
     else { view.x -= e.deltaX; view.y -= e.deltaY; render(); }
   }, { passive: false });
-
   function updateZoomLabel() { zoomLabel.textContent = Math.round(view.scale * 100) + "%"; }
   document.getElementById("zoomin").addEventListener("click", () => { const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale * 1.25); });
   document.getElementById("zoomout").addEventListener("click", () => { const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale / 1.25); });
   document.getElementById("zoomreset").addEventListener("click", () => { const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, 1); });
   document.getElementById("zoomfit").addEventListener("click", fitToContent);
-
   function fitToContent() {
     const v = viewSize();
     if (!items.length) { view.scale = 1; view.x = 0; view.y = 0; render(); updateZoomLabel(); return; }
-    const b = contentBounds(), pad = 60;
-    const bw = (b.maxX - b.minX) + pad * 2, bh = (b.maxY - b.minY) + pad * 2;
-    let s = Math.min(v.w / bw, v.h / bh); s = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
-    view.scale = s;
-    const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
-    view.x = v.w / 2 - cx * s; view.y = v.h / 2 - cy * s;
-    render(); updateZoomLabel();
+    const b = contentBounds(), pad = 60, bw = (b.maxX - b.minX) + pad * 2, bh = (b.maxY - b.minY) + pad * 2;
+    let s = Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.min(v.w / bw, v.h / bh)));
+    view.scale = s; const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+    view.x = v.w / 2 - cx * s; view.y = v.h / 2 - cy * s; render(); updateZoomLabel();
   }
 
-  // ---------- content bounds + export ----------
+  // ---------- bounds + export ----------
   function contentBounds() {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const it of items) {
-      if (it.type === "stroke") {
-        const r = it.size / 2;
-        for (const p of it.points) { minX = Math.min(minX, p.x - r); minY = Math.min(minY, p.y - r); maxX = Math.max(maxX, p.x + r); maxY = Math.max(maxY, p.y + r); }
-      } else {
-        const b = itemBox(it); minX = Math.min(minX, b.x); minY = Math.min(minY, b.y); maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h);
-      }
-    }
+    for (const it of items) { const b = bounds(it); minX = Math.min(minX, b.x); minY = Math.min(minY, b.y); maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h); }
     if (!isFinite(minX)) { minX = minY = 0; maxX = maxY = 1; }
     return { minX, minY, maxX, maxY };
   }
-  // Capture only what is currently visible on the canvas (the viewport),
-  // on a clean white background without the grid or selection handles.
+  // Capture only the visible viewport, on white, without grid/handles.
   function renderExport() {
-    const v = viewSize();
-    const s = Math.min(dpr, 2);
+    const v = viewSize(), s = Math.min(dpr, 2);
     const off = document.createElement("canvas");
     off.width = Math.max(1, Math.round(v.w * s)); off.height = Math.max(1, Math.round(v.h * s));
     const g = off.getContext("2d");
@@ -478,60 +636,66 @@
     return off;
   }
 
-  // ---------- text editor ----------
-  function openEditor(wx, wy, existing) {
-    const it = existing || { type: "text", text: "", x: wx, y: wy, size: Math.max(16, state.size * 4), color: state.color };
-    const scr = toScreen(it.x, it.y);
+  // ---------- editors ----------
+  function makeEditor(o) {
     const ta = document.createElement("textarea");
-    ta.className = "txt-editor"; ta.value = it.text;
-    ta.style.left = scr.x + "px"; ta.style.top = scr.y + "px";
-    ta.style.fontSize = (it.size * view.scale) + "px"; ta.style.color = it.color; ta.rows = 1;
-    stage.appendChild(ta);
-    editor = { el: ta, item: it, isNew: !existing };
-    if (existing) { selected = null; render(); }
+    ta.className = "txt-editor"; ta.value = o.value || "";
+    ta.style.left = o.sx + "px"; ta.style.top = o.sy + "px";
+    ta.style.fontSize = o.fontSize + "px"; ta.style.color = o.color;
+    if (o.center) { ta.style.transform = "translate(-50%,-50%)"; ta.style.textAlign = "center"; }
+    ta.rows = 1; stage.appendChild(ta);
+    editor = { el: ta, onCommit: o.onCommit };
     const grow = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; ta.style.width = (ta.scrollWidth + 4) + "px"; };
     ta.addEventListener("input", grow);
-    requestAnimationFrame(() => { ta.focus(); grow(); });
+    requestAnimationFrame(() => { ta.focus(); ta.select(); grow(); });
     ta.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") { ev.preventDefault(); cancelEditor(); }
       if ((ev.metaKey || ev.ctrlKey) && ev.key === "Enter") { ev.preventDefault(); commitEditor(); }
     });
     ta.addEventListener("blur", commitEditor);
-    setStatus("neutral", "Type your note — click away to place it");
   }
   function cancelEditor() { if (!editor) return; const e = editor; editor = null; e.el.removeEventListener("blur", commitEditor); e.el.remove(); render(); }
-  function commitEditor() {
-    if (!editor) return; const e = editor; editor = null;
-    e.el.removeEventListener("blur", commitEditor);
-    const text = e.el.value.replace(/\s+$/, ""); e.el.remove();
-    if (text) { e.item.text = text; e.item._w = null; if (e.isNew) items.push(e.item); selected = e.item; commit(true); }
-    else render();
+  function commitEditor() { if (!editor) return; const e = editor; editor = null; e.el.removeEventListener("blur", commitEditor); const text = e.el.value.replace(/\s+$/, ""); e.el.remove(); e.onCommit(text); }
+
+  function openTextEditor(wx, wy, existing) {
+    const it = existing || { type: "text", text: "", x: wx, y: wy, size: Math.max(16, state.size * 4), color: state.color };
+    const scr = toScreen(it.x, it.y);
+    makeEditor({
+      sx: scr.x, sy: scr.y, fontSize: it.size * view.scale, color: it.color, value: it.text,
+      onCommit: (text) => {
+        if (text) { it.text = text; it._w = null; if (!existing) items.push(it); selectOnly(it); commit(true); }
+        else { if (existing) { const i = items.indexOf(it); if (i >= 0) items.splice(i, 1); selection = []; } commit(true); }
+      }
+    });
+    setStatus("neutral", "Type your note — click away to place it");
+  }
+  function openLabelEditor(sh) {
+    const c = toScreen(sh.x + sh.w / 2, sh.y + sh.h / 2), fs = sh.textSize || 18;
+    makeEditor({
+      sx: c.x, sy: c.y, fontSize: fs * view.scale, color: sh.color, value: sh.text || "", center: true,
+      onCommit: (text) => { sh.text = text; commit(true); }
+    });
+    setStatus("neutral", "Label the shape — click away when done");
   }
 
-  // ---------- adding images / text ----------
+  // ---------- images / text ----------
   function placeImage(img, wx, wy) {
-    const v = viewSize();
-    const maxW = (v.w * 0.7) / view.scale, maxH = (v.h * 0.7) / view.scale;
-    let w = img.naturalWidth, h = img.naturalHeight;
-    const sc = Math.min(1, maxW / w, maxH / h); w *= sc; h *= sc;
-    const c = (wx != null) ? { x: wx, y: wy } : viewCenterWorld();
+    const v = viewSize(), maxW = (v.w * 0.7) / view.scale, maxH = (v.h * 0.7) / view.scale;
+    let w = img.naturalWidth, h = img.naturalHeight; const sc = Math.min(1, maxW / w, maxH / h); w *= sc; h *= sc;
+    const c = wx != null ? { x: wx, y: wy } : viewCenterWorld();
     items.push({ type: "image", img, x: c.x - w / 2, y: c.y - h / 2, w, h });
-    state.tool = "select"; selected = items[items.length - 1]; syncTools(); applyCursor();
+    state.tool = "select"; syncTools(); applyCursor(); selectOnly(items[items.length - 1]);
     setStatus("ok", "Image added — drag to move, corner to resize"); commit(true);
   }
-  function addImageFromBlob(blob, wx, wy) { const url = URL.createObjectURL(blob); const img = new Image(); img.onload = () => placeImage(img, wx, wy); img.src = url; }
+  function addImageFromBlob(b, wx, wy) { const u = URL.createObjectURL(b), img = new Image(); img.onload = () => placeImage(img, wx, wy); img.src = u; }
   function addImageFromSrc(src, wx, wy) { const img = new Image(); img.onload = () => placeImage(img, wx, wy); img.src = src; }
   function addTextBlock(text) {
-    const c = viewCenterWorld();
-    const it = { type: "text", text, x: c.x, y: c.y, size: 24, color: state.color };
-    measureText(it); it.x -= it._w / 2; it.y -= it._h / 2;
-    items.push(it); state.tool = "select"; selected = it; syncTools(); applyCursor();
-    setStatus("ok", "Text added"); commit(true);
+    const c = viewCenterWorld(), it = { type: "text", text, x: c.x, y: c.y, size: 24, color: state.color };
+    measureText(it); it.x -= it._w / 2; it.y -= it._h / 2; items.push(it);
+    state.tool = "select"; syncTools(); applyCursor(); selectOnly(it); setStatus("ok", "Text added"); commit(true);
   }
-
   fileInput.addEventListener("change", () => { for (const f of fileInput.files) if (f.type.startsWith("image/")) addImageFromBlob(f); fileInput.value = ""; });
   document.getElementById("addimg").addEventListener("click", () => fileInput.click());
-
   window.addEventListener("paste", (e) => {
     if (document.activeElement && document.activeElement.classList.contains("txt-editor")) return;
     const dt = e.clipboardData; if (!dt) return; let handled = false;
@@ -539,10 +703,9 @@
     if (!handled) { const t = dt.getData("text/plain"); if (t && t.trim()) { addTextBlock(t.trim()); handled = true; } }
     if (handled) e.preventDefault();
   });
-
-  ["dragenter", "dragover"].forEach((ev) => canvas.addEventListener(ev, (e) => { e.preventDefault(); }));
+  ["dragenter", "dragover"].forEach((ev) => canvas.addEventListener(ev, (e) => e.preventDefault()));
   canvas.addEventListener("drop", (e) => {
-    e.preventDefault(); const p = pos(e); const wp = toWorld(p.x, p.y);
+    e.preventDefault(); const p = pos(e), wp = toWorld(p.x, p.y);
     for (const f of e.dataTransfer.files) if (f.type.startsWith("image/")) addImageFromBlob(f, wp.x, wp.y);
     const uri = e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain");
     if (!e.dataTransfer.files.length && uri && /^https?:|^data:/.test(uri)) addImageFromSrc(uri, wp.x, wp.y);
@@ -553,21 +716,17 @@
   function setStatus(kind, text) {
     statusEl.classList.remove("ok", "err");
     if (kind === "ok") statusEl.classList.add("ok"); if (kind === "err") statusEl.classList.add("err");
-    statusText.textContent = text;
-    if (statusTimer) clearTimeout(statusTimer);
-    if (kind === "ok" || kind === "err") statusTimer = setTimeout(() => {
-      statusEl.classList.remove("ok", "err"); statusText.textContent = state.autocopy ? "Auto-copy is on" : "Auto-copy is off";
-    }, 2200);
+    statusText.textContent = text; if (statusTimer) clearTimeout(statusTimer);
+    if (kind === "ok" || kind === "err") statusTimer = setTimeout(() => { statusEl.classList.remove("ok", "err"); statusText.textContent = state.autocopy ? "Auto-copy is on" : "Auto-copy is off"; }, 2200);
   }
   function copyToClipboard(auto) {
     if (!items.length) { setStatus("neutral", "Nothing to copy yet"); return; }
     if (!navigator.clipboard || !window.ClipboardItem) { copyFailed({ name: "unsupported" }); return; }
     const off = renderExport();
-    const blobPromise = new Promise((resolve, reject) => off.toBlob((b) => b ? resolve(b) : reject(new Error("encode-failed")), "image/png"));
+    const blobPromise = new Promise((res, rej) => off.toBlob((b) => b ? res(b) : rej(new Error("encode-failed")), "image/png"));
     try {
       navigator.clipboard.write([new ClipboardItem({ "image/png": blobPromise })])
-        .then(() => setStatus("ok", auto ? "Copied ✓  paste into Claude with ⌘V" : "Copied ✓  ready to paste"))
-        .catch(copyFailed);
+        .then(() => setStatus("ok", auto ? "Copied ✓  paste into Claude with ⌘V" : "Copied ✓  ready to paste")).catch(copyFailed);
     } catch (err) { copyFailed(err); }
   }
   function copyFailed(err) { const name = (err && (err.name || err.message)) || "error"; setStatus("err", "Copy blocked (" + name + ") — use Save PNG instead"); }
@@ -575,63 +734,89 @@
     if (!items.length) { setStatus("neutral", "Nothing to save yet"); return; }
     renderExport().toBlob((b) => {
       if (!b) { setStatus("err", "Could not render image"); return; }
-      const url = URL.createObjectURL(b); const a = document.createElement("a");
-      a.href = url; a.download = "sketch.png"; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500); setStatus("ok", "Saved sketch.png — drag it into Claude");
+      const u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = "sketch.png";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1500); setStatus("ok", "Saved sketch.png — drag it into Claude");
     }, "image/png");
   }
   function commit(auto) { render(); if (auto && state.autocopy) copyToClipboard(true); }
 
+  // ---------- editing actions ----------
+  function cloneItem(it) {
+    const c = Object.assign({}, it); c._w = null;
+    if (it.type === "stroke") c.points = it.points.map((p) => ({ x: p.x, y: p.y }));
+    return c;
+  }
+  function duplicateSel() {
+    if (!selection.length) return;
+    const clones = selection.map(cloneItem); clones.forEach((c) => applyPos(c, snapPos(c), 16, 16));
+    items.push(...clones); selection = clones; commit(true); setStatus("ok", "Duplicated");
+  }
+  function reorder(front) {
+    if (!selection.length) return;
+    const sel = new Set(selection), rest = items.filter((i) => !sel.has(i));
+    items.length = 0; if (front) items.push(...rest, ...selection); else items.push(...selection, ...rest);
+    commit(true); setStatus("neutral", front ? "Brought to front" : "Sent to back");
+  }
+  function deleteSel() { if (!selection.length) return; const sel = new Set(selection); for (let i = items.length - 1; i >= 0; i--) if (sel.has(items[i])) items.splice(i, 1); selection = []; commit(true); }
+
   // ---------- toolbar ----------
   function applyCursor() {
-    canvas.style.cursor = state.tool === "pen" ? "crosshair"
-      : state.tool === "eraser" ? "cell"
-      : state.tool === "text" ? "text"
-      : state.tool === "hand" ? "grab" : "default";
+    const t = state.tool;
+    canvas.style.cursor = t === "pen" || t === "highlight" || SHAPE_TOOLS[t] ? "crosshair" : t === "eraser" ? "cell" : t === "text" ? "text" : t === "hand" ? "grab" : "default";
   }
   function syncTools() {
     document.querySelectorAll("[data-tool]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tool === state.tool));
-    if (state.tool !== "select") selected = null;
+    if (state.tool !== "select") selection = [];
   }
   function pickTool(t) { state.tool = t; syncTools(); applyCursor(); render(); }
   document.querySelectorAll("[data-tool]").forEach((b) => b.addEventListener("click", () => pickTool(b.dataset.tool)));
   document.querySelectorAll(".swatch").forEach((b) => b.addEventListener("click", () => {
     state.color = b.dataset.color;
     document.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", s === b));
-    if (selected && selected.type === "text") { selected.color = state.color; commit(true); }
+    let touched = false;
+    for (const it of selection) if (it.type === "text" || it.type === "shape") { it.color = state.color; touched = true; }
+    if (touched) commit(true);
   }));
   document.querySelectorAll(".size").forEach((b) => b.addEventListener("click", () => {
     state.size = Number(b.dataset.size);
     document.querySelectorAll(".size").forEach((s) => s.setAttribute("aria-pressed", s === b));
+    let touched = false;
+    for (const it of selection) if (it.type === "shape") { it.size = state.size; touched = true; }
+    if (touched) commit(true);
   }));
+  document.getElementById("dup").addEventListener("click", duplicateSel);
+  document.getElementById("tofront").addEventListener("click", () => reorder(true));
+  document.getElementById("toback").addEventListener("click", () => reorder(false));
   document.getElementById("undo").addEventListener("click", doUndo);
   function doUndo() {
     if (editor) { cancelEditor(); return; }
-    items.pop(); selected = null; render();
+    items.pop(); selection = []; render();
     if (items.length && state.autocopy) copyToClipboard(true); else setStatus("neutral", items.length ? "Undid last item" : "Canvas is empty");
   }
-  document.getElementById("clear").addEventListener("click", () => { items.length = 0; selected = null; render(); setStatus("neutral", "Cleared"); });
+  document.getElementById("clear").addEventListener("click", () => { items.length = 0; selection = []; render(); setStatus("neutral", "Cleared"); });
   const autoInput = document.getElementById("autocopy");
   autoInput.addEventListener("change", () => { state.autocopy = autoInput.checked; setStatus("neutral", state.autocopy ? "Auto-copy is on" : "Auto-copy is off"); });
   document.getElementById("copynow").addEventListener("click", () => copyToClipboard(false));
   document.getElementById("savepng").addEventListener("click", savePng);
 
   // ---------- keyboard ----------
+  const TOOL_KEYS = { p: "pen", g: "highlight", t: "text", m: "select", h: "hand", e: "eraser", r: "rect", o: "ellipse", l: "line", a: "arrow" };
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space" && !spaceDown) { const a = document.activeElement; if (!(a && a.classList.contains("txt-editor"))) { spaceDown = true; if (!mode) canvas.style.cursor = "grab"; } }
-    const inEditor = document.activeElement && document.activeElement.classList.contains("txt-editor");
-    if (inEditor) return;
-    const meta = e.metaKey || e.ctrlKey;
-    if (meta && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); }
-    else if (meta && e.key.toLowerCase() === "c") { e.preventDefault(); copyToClipboard(false); }
+    if (document.activeElement && document.activeElement.classList.contains("txt-editor")) return;
+    const meta = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+    if (meta && k === "z") { e.preventDefault(); doUndo(); }
+    else if (meta && k === "c") { e.preventDefault(); copyToClipboard(false); }
+    else if (meta && k === "d") { e.preventDefault(); duplicateSel(); }
+    else if (meta && e.key === "]") { e.preventDefault(); reorder(true); }
+    else if (meta && e.key === "[") { e.preventDefault(); reorder(false); }
     else if (meta && (e.key === "=" || e.key === "+")) { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale * 1.25); }
     else if (meta && e.key === "-") { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale / 1.25); }
     else if (meta && e.key === "0") { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, 1); }
-    else if ((e.key === "Delete" || e.key === "Backspace") && selected) { e.preventDefault(); const i = items.indexOf(selected); if (i >= 0) items.splice(i, 1); selected = null; commit(true); }
+    else if ((e.key === "Delete" || e.key === "Backspace") && selection.length) { e.preventDefault(); deleteSel(); }
+    else if (e.key === "Escape") { selection = []; render(); }
     else if (e.key === "1" && !meta) fitToContent();
-    else if (!meta && "ptmhe".includes(e.key.toLowerCase())) {
-      const map = { p: "pen", t: "text", m: "select", h: "hand", e: "eraser" }; pickTool(map[e.key.toLowerCase()]);
-    }
+    else if (!meta && TOOL_KEYS[k]) pickTool(TOOL_KEYS[k]);
   });
   window.addEventListener("keyup", (e) => { if (e.code === "Space") { spaceDown = false; if (!mode) applyCursor(); } });
 
