@@ -4,6 +4,8 @@ A tiny drawing board that copies whatever you make straight to your clipboard, s
 
 Sometimes it is faster to draw a box with an arrow than to describe it in a paragraph. That is the whole idea.
 
+Try it here: https://hz47.github.io/Sketch2AI/
+
 ## What it does
 
 - Draw with a pen in four colors and three sizes.
