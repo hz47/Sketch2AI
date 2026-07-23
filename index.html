@@ -431,8 +431,38 @@
     ctx.strokeRect(marquee.x0, marquee.y0, w, h);
     ctx.restore();
   }
+  // Connected arrows / labels (from diagrams): an item carrying `from`/`to`
+  // node ids re-routes to the current edges of those boxes, so dragging a box
+  // makes its arrows follow. Resolved in place before every draw, so drawing,
+  // hit-testing, and bounds all read the fresh geometry. Items without from/to
+  // (everything you draw by hand) are never touched.
+  function boundaryPoint(box, tx, ty) {
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    const hw = Math.abs(box.w) / 2, hh = Math.abs(box.h) / 2;
+    const dx = tx - cx, dy = ty - cy;
+    if (dx === 0 && dy === 0) return { x: cx, y: cy };
+    if (dx === 0) return { x: cx, y: cy + (dy > 0 ? hh : -hh) };
+    if (dy === 0) return { x: cx + (dx > 0 ? hw : -hw), y: cy };
+    const s = Math.min(hw / Math.abs(dx), hh / Math.abs(dy));
+    return { x: cx + dx * s, y: cy + dy * s };
+  }
+  function refreshConnectors() {
+    let byId = null;
+    for (const it of items) {
+      if (!it.from || !it.to) continue;
+      if (it.type !== "shape" && it.type !== "text") continue;
+      if (!byId) { byId = {}; for (const j of items) if (j.id) byId[j.id] = j; }
+      const a = byId[it.from], b = byId[it.to];
+      if (!a || !b || a.type !== "shape" || b.type !== "shape") continue;
+      const p1 = boundaryPoint(a, b.x + b.w / 2, b.y + b.h / 2);
+      const p2 = boundaryPoint(b, a.x + a.w / 2, a.y + a.h / 2);
+      if (it.type === "shape") { it.x1 = p1.x; it.y1 = p1.y; it.x2 = p2.x; it.y2 = p2.y; }
+      else { measureText(it); it.x = (p1.x + p2.x) / 2 - it._w / 2; it.y = (p1.y + p2.y) / 2 - it._h / 2; }
+    }
+  }
   function render(overlay = true) {
     const v = viewSize();
+    refreshConnectors();
     screenT(); ctx.fillStyle = SHEET; ctx.fillRect(0, 0, v.w, v.h); drawGrid();
     worldT(); for (const it of items) drawItem(ctx, it);
     screenT();
@@ -631,6 +661,7 @@
   }
   // Capture only the visible viewport, on white, without grid/handles.
   function renderExport() {
+    refreshConnectors();
     const v = viewSize(), s = Math.min(dpr, 2);
     const off = document.createElement("canvas");
     off.width = Math.max(1, Math.round(v.w * s)); off.height = Math.max(1, Math.round(v.h * s));
@@ -748,6 +779,7 @@
   // ---------- editing actions ----------
   function cloneItem(it) {
     const c = Object.assign({}, it); c._w = null;
+    delete c.id; delete c.from; delete c.to;  // a copy is a plain, unlinked shape
     if (it.type === "stroke") c.points = it.points.map((p) => ({ x: p.x, y: p.y }));
     return c;
   }

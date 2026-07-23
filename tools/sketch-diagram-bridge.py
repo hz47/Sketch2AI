@@ -264,6 +264,10 @@ def layout(graph):
         cx, cy = centers[n]
         centers[n] = (cx + ox, cy + oy)
 
+    # Stable ids so arrows/labels can stay connected to their boxes when the
+    # user drags things around on the canvas (see refreshConnectors in the app).
+    nid_of = {n: "dgm:" + n for n in order_ids}
+
     items = []
     # Draw edges first so nodes sit on top.
     for e in edges:
@@ -274,20 +278,22 @@ def layout(graph):
         x2, y2 = _box_edge_point(bx, by, node[b]["w"] / 2, node[b]["h"] / 2, ax, ay)
         items.append({"type": "shape", "kind": "arrow", "x1": round(x1, 1),
                       "y1": round(y1, 1), "x2": round(x2, 1), "y2": round(y2, 1),
-                      "color": INK, "size": EDGE_LINE})
+                      "color": INK, "size": EDGE_LINE,
+                      "from": nid_of[a], "to": nid_of[b]})
         if e.get("label"):
             lx, ly = (x1 + x2) / 2, (y1 + y2) / 2
             label = str(e["label"])
             items.append({"type": "text", "text": label,
                           "x": round(lx - len(label) * EDGE_LABEL_SIZE * 0.29, 1),
                           "y": round(ly - EDGE_LABEL_SIZE, 1),
-                          "size": EDGE_LABEL_SIZE, "color": MUTED})
+                          "size": EDGE_LABEL_SIZE, "color": MUTED,
+                          "from": nid_of[a], "to": nid_of[b]})
 
     for n in order_ids:
         cx, cy = centers[n]
         w, h = node[n]["w"], node[n]["h"]
         kind = "ellipse" if node[n].get("shape") == "ellipse" else "rect"
-        items.append({"type": "shape", "kind": kind,
+        items.append({"type": "shape", "kind": kind, "id": nid_of[n],
                       "x": round(cx - w / 2, 1), "y": round(cy - h / 2, 1),
                       "w": w, "h": h, "color": INK, "size": NODE_LINE,
                       "text": node[n]["text"], "textSize": FONT_SIZE})
