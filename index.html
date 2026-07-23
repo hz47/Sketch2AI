@@ -841,6 +841,29 @@
     });
   })();
 
+  // ---------- diagram inject ----------
+  // Only active when the diagram CLI opens the board as ?diagram=1. Fetches a
+  // pre-laid-out set of items from the local server and drops them onto the
+  // canvas as ordinary, editable shapes. The hosted page never does this.
+  (function diagramMode() {
+    if (!new URLSearchParams(location.search).has("diagram")) return;
+    setStatus("neutral", "Loading diagram…");
+    fetch("/diagram")
+      .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then((data) => {
+        const incoming = Array.isArray(data && data.items) ? data.items : [];
+        let added = 0;
+        for (const it of incoming) {
+          if (!it || typeof it !== "object") continue;
+          if (it.type === "shape" || it.type === "text") { items.push(it); added++; }
+        }
+        if (!added) { setStatus("err", "Diagram was empty"); return; }
+        fitToContent();
+        setStatus("ok", "Diagram drawn ✓  drag anything to edit");
+      })
+      .catch((err) => setStatus("err", "Diagram load failed (" + (err.message || err) + ")"));
+  })();
+
   // ---------- keyboard ----------
   const TOOL_KEYS = { p: "pen", g: "highlight", t: "text", m: "select", h: "hand", e: "eraser", r: "rect", o: "ellipse", l: "line", a: "arrow" };
   window.addEventListener("keydown", (e) => {

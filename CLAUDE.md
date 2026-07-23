@@ -18,6 +18,9 @@ there is a strong reason not to.
 - `index.html` — the whole app.
 - `tools/sketch-bridge.py` — local bridge for the Claude Code `/sketch` command
   (see below). Not loaded by the app; run separately by the CLI command.
+- `tools/sketch-diagram-bridge.py` — local bridge for the `/sketch-diagram`
+  command: lays out a node/edge graph and injects it onto the canvas as editable
+  shapes (see below). Independent of `sketch-bridge.py`.
 - `README.md` — user-facing description and shortcuts.
 - `LICENSE` — MIT.
 - `CLAUDE.md` — this file.
@@ -38,6 +41,24 @@ path to stdout, and exits so the command can Read it.
   the POST target off the serving origin.
 - Local macOS only by nature (it opens a browser for a human to draw in). The
   script fails fast on non-Darwin or when `open` is missing rather than hanging.
+
+## Diagram bridge (`/sketch-diagram`)
+
+`tools/sketch-diagram-bridge.py` is the reverse direction: Claude describes a
+diagram as a `{direction, nodes, edges}` graph, the script lays it out (a pure
+Python layered / Sugiyama-style algorithm — no JS libraries, so `index.html`
+stays self-contained), converts it to Sketch2AI items (rounded-rect/ellipse
+nodes with centered labels, arrows between box boundaries, optional edge
+labels), serves the board, and opens it with `?diagram=1`.
+
+- The board's `diagramMode()` IIFE (gated on `?diagram=1`) fetches `/diagram`
+  and pushes the items straight onto the canvas, then `fitToContent()`. Because
+  they are ordinary items, everything is immediately draggable/editable.
+- Layout lives in Python on purpose: LLMs are reliable at graph *semantics* but
+  not pixel coordinates, so Claude only emits nodes/edges and the code does
+  geometry. Keep it that way.
+- Separate from the draw bridge: own pidfile, own single-instance guard, same
+  local-macOS-only fail-fast. The `/sketch` path is untouched.
 
 ## Run and test
 

@@ -80,6 +80,19 @@ Under the hood it runs `tools/sketch-bridge.py`, a small standard-library server
 3. The first time you run `/sketch`, macOS may ask to let your terminal control
    System Events (used to bring the terminal back to the front). Allow it once.
 
+### Let Claude draw a diagram for you (`/sketch-diagram`)
+
+The reverse direction also works: describe a diagram and Claude draws it onto the
+board as real, editable shapes. Say `/sketch-diagram the login flow` and boxes,
+arrows, and labels appear on your canvas, laid out automatically. Every element is
+an ordinary Sketch2AI shape, so you can drag, relabel, restyle, or delete any of
+it, and mix it with your own drawing.
+
+It uses `tools/sketch-diagram-bridge.py`, which lays out a node/edge graph in
+Python and injects it through the same `?bridge`-style gate (`?diagram=1`). Same
+requirement as above: local Mac only. Set it up with a `~/.claude/commands/sketch-diagram.md`
+command that runs the bridge with a graph JSON file, the same way `/sketch` is wired.
+
 ## A note about the clipboard
 
 The copy feature needs the page to run as a local file or a real website. If you open it inside a sandboxed preview, the browser blocks clipboard access and you will see a "Copy blocked" message. Running the local file in Chrome fixes it. If a copy is ever blocked, use the "Save PNG" button and drag the file in instead.
