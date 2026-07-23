@@ -464,16 +464,16 @@
     if (!isFinite(minX)) { minX = minY = 0; maxX = maxY = 1; }
     return { minX, minY, maxX, maxY };
   }
+  // Capture only what is currently visible on the canvas (the viewport),
+  // on a clean white background without the grid or selection handles.
   function renderExport() {
-    const b = contentBounds(), pad = 28;
-    const w = (b.maxX - b.minX) + pad * 2, h = (b.maxY - b.minY) + pad * 2;
-    let s = 2; const maxDim = 4096;
-    s = Math.min(s, maxDim / w, maxDim / h); s = Math.max(0.5, s);
+    const v = viewSize();
+    const s = Math.min(dpr, 2);
     const off = document.createElement("canvas");
-    off.width = Math.max(1, Math.round(w * s)); off.height = Math.max(1, Math.round(h * s));
+    off.width = Math.max(1, Math.round(v.w * s)); off.height = Math.max(1, Math.round(v.h * s));
     const g = off.getContext("2d");
     g.fillStyle = SHEET; g.fillRect(0, 0, off.width, off.height);
-    g.setTransform(s, 0, 0, s, -(b.minX - pad) * s, -(b.minY - pad) * s);
+    g.setTransform(view.scale * s, 0, 0, view.scale * s, view.x * s, view.y * s);
     for (const it of items) drawItem(g, it);
     return off;
   }

@@ -13,7 +13,7 @@ Try it here: https://hz47.github.io/Sketch2AI/
 - Drag image files in from Finder.
 - Add text notes, then move and resize anything.
 - Work on an endless canvas. Scroll to pan, pinch or Cmd+scroll to zoom, and keep adding content wherever you like.
-- Every time you finish a stroke or change something, the whole drawing is copied to your clipboard, cropped to your content. Then you just paste it into Claude.
+- Every time you finish a stroke or change something, the visible area of the canvas is copied to your clipboard. Pan and zoom to frame what you want, and that is what gets copied. Then you just paste it into Claude.
 
 There is also a "Copy now" button if you turn off auto-copy, and a "Save PNG" button that downloads the board as a file.
 
