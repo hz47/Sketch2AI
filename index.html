@@ -430,16 +430,25 @@
     if (box && box.type === "shape") drawPortDots(box);
     ctx.restore();
   }
+  function isEdge(it) { return it.type === "shape" && (it.kind === "line" || it.kind === "arrow"); }
   function drawSelectionOverlay() {
     ctx.save();
     ctx.strokeStyle = accentColor; ctx.fillStyle = accentColor;
     for (const it of selection) {
+      if (isEdge(it)) {
+        // A selected line is highlighted along itself — no bounding rectangle.
+        const a = toScreen(it.x1, it.y1), b = toScreen(it.x2, it.y2);
+        ctx.save(); ctx.globalAlpha = 0.45; ctx.lineCap = "round";
+        ctx.lineWidth = it.size * view.scale + 5;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.restore();
+        continue;
+      }
       const b = bounds(it), p = toScreen(b.x, b.y), w = b.w * view.scale, h = b.h * view.scale;
       ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]); ctx.strokeRect(p.x - 3, p.y - 3, w + 6, h + 6); ctx.setLineDash([]);
     }
     if (selection.length === 1) {
       const it = selection[0];
-      if (it.type === "shape" && (it.kind === "line" || it.kind === "arrow")) {
+      if (isEdge(it)) {
         const a = toScreen(it.x1, it.y1), b = toScreen(it.x2, it.y2);
         ctx.fillRect(a.x - 5, a.y - 5, 10, 10); ctx.fillRect(b.x - 5, b.y - 5, 10, 10);
       } else {
