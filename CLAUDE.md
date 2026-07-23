@@ -16,9 +16,28 @@ there is a strong reason not to.
 ## Files
 
 - `index.html` — the whole app.
+- `tools/sketch-bridge.py` — local bridge for the Claude Code `/sketch` command
+  (see below). Not loaded by the app; run separately by the CLI command.
 - `README.md` — user-facing description and shortcuts.
 - `LICENSE` — MIT.
 - `CLAUDE.md` — this file.
+
+## Claude Code bridge (`/sketch`)
+
+`tools/sketch-bridge.py` is a standard-library HTTP server that lets a drawing go
+straight from the board into a local Claude Code session. Flow: the CLI command
+runs the script; it serves `index.html` on `127.0.0.1:<free-port>` and opens it
+with `?bridge=1`; the page then shows a "Send to Claude" button (and a Cmd+Return
+shortcut) that POSTs the exported PNG to `/submit` on the same origin; the server
+writes the PNG to a temp file, refocuses the terminal via `osascript`, prints the
+path to stdout, and exits so the command can Read it.
+
+- The button/shortcut live in the `bridgeMode()` IIFE in `index.html`, gated on
+  the `?bridge=1` query param, so the hosted page never shows them.
+- Same-origin is the whole trick: no clipboard permission, no CORS. Do not move
+  the POST target off the serving origin.
+- Local macOS only by nature (it opens a browser for a human to draw in). The
+  script fails fast on non-Darwin or when `open` is missing rather than hanging.
 
 ## Run and test
 

@@ -66,6 +66,11 @@
   button.tool[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   button.tool.danger:hover { border-color: var(--accent); color: var(--accent); }
   button.tool svg { width: 15px; height: 15px; }
+  button.tool .sc-key {
+    font: inherit; font-size: 10.5px; line-height: 1; color: var(--muted);
+    border: 1px solid var(--line-strong); border-radius: 5px;
+    padding: 2px 4px; margin-left: 1px;
+  }
   .size {
     width: 29px; height: 29px; border-radius: 8px; border: 1px solid var(--line-strong);
     background: var(--panel); cursor: pointer; display: grid; place-items: center; padding: 0;
@@ -798,6 +803,43 @@
   autoInput.addEventListener("change", () => { state.autocopy = autoInput.checked; setStatus("neutral", state.autocopy ? "Auto-copy is on" : "Auto-copy is off"); });
   document.getElementById("copynow").addEventListener("click", () => copyToClipboard(false));
   document.getElementById("savepng").addEventListener("click", savePng);
+
+  // ---------- Claude Code bridge ----------
+  // Only active when the sketch CLI opens the board as ?bridge=1 (served from the
+  // local bridge server). Adds a "Send to Claude" button that POSTs the visible
+  // canvas to /submit on the same origin. The hosted page never sees this.
+  (function bridgeMode() {
+    if (!new URLSearchParams(location.search).has("bridge")) return;
+    const btn = document.createElement("button");
+    btn.className = "tool"; btn.id = "sendclaude";
+    btn.title = "Send this drawing to your Claude Code session (⌘↵)";
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg><span>Send to Claude</span><kbd class="sc-key">⌘↵</kbd>';
+    const savep = document.getElementById("savepng");
+    savep.parentNode.insertBefore(btn, savep.nextSibling);
+    if (autoInput.checked) { autoInput.checked = false; state.autocopy = false; }
+    setStatus("neutral", "Draw, then press ⌘↵ (or click Send to Claude)");
+    let sending = false;
+    btn.addEventListener("click", () => {
+      if (sending) return;
+      if (!items.length) { setStatus("neutral", "Draw something first"); return; }
+      sending = true; btn.disabled = true;
+      renderExport().toBlob((b) => {
+        if (!b) { setStatus("err", "Could not render image"); sending = false; btn.disabled = false; return; }
+        fetch("/submit", { method: "POST", headers: { "Content-Type": "image/png" }, body: b })
+          .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); setStatus("ok", "Sent to Claude ✓  back to your terminal"); btn.querySelector("span").textContent = "Sent ✓"; })
+          .catch((err) => { setStatus("err", "Send failed (" + (err.message || err) + ")"); sending = false; btn.disabled = false; });
+      }, "image/png");
+    });
+    // ⌘↵ / Ctrl+↵ sends, unless a shape label is being edited (there it commits the label).
+    window.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        const a = document.activeElement;
+        if (a && a.classList.contains("txt-editor")) return;
+        e.preventDefault();
+        btn.click();
+      }
+    });
+  })();
 
   // ---------- keyboard ----------
   const TOOL_KEYS = { p: "pen", g: "highlight", t: "text", m: "select", h: "hand", e: "eraser", r: "rect", o: "ellipse", l: "line", a: "arrow" };

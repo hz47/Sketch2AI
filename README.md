@@ -36,6 +36,50 @@ That is it. No install, no account, no server. It is one HTML file with everythi
 
 Open the page in Chrome, then go to the menu and pick "Install page as app" (older Chrome calls it "Create Shortcut" with the "Open as window" option). You get a dock icon and its own window.
 
+## Use it with Claude Code in the terminal (macOS)
+
+There is a `/sketch` command for Claude Code. Type `/sketch` in your terminal, the whiteboard opens, you draw, and pressing Cmd+Return sends the drawing straight into your Claude Code session. Focus then jumps back to your terminal, so it is one keypress to send and no clicks to return.
+
+Under the hood it runs `tools/sketch-bridge.py`, a small standard-library server that hosts the board on `127.0.0.1`, catches the drawing you send, saves it as a PNG, and prints the file path for Claude to read. Because the board is served by that same local server, the "Send to Claude" button posts the image back to it with no clipboard or cross-origin hurdles. The button only appears when the page is opened with `?bridge=1`, so the hosted site above is unchanged.
+
+**This only works with Claude Code running locally on a Mac.** It opens a browser on your machine for you to draw in, so it cannot run in a remote or cloud Claude Code session (there is no local browser, and no one is sitting at that machine to draw), and it is macOS only. If it is ever launched somewhere it cannot work, it exits right away with a message instead of hanging.
+
+### Setup
+
+1. Clone this repo somewhere on your Mac.
+2. Create the command file `~/.claude/commands/sketch.md` (global, so `/sketch` works in any session). Put this inside it, replacing the path with wherever you cloned the repo:
+
+   ```markdown
+   ---
+   description: Open the Sketch2AI whiteboard, draw, and pull the drawing into this session
+   ---
+
+   The user wants to draw something and hand the drawing to you. Use the
+   Sketch2AI bridge to capture it.
+
+   1. Run the bridge in the foreground and wait for it to finish (it blocks until
+      the user sends a drawing, so pass a Bash `timeout` of 600000 ms):
+
+      `uv run python3 /ABSOLUTE/PATH/TO/Sketch2AI/tools/sketch-bridge.py`
+
+      It opens the whiteboard in the browser and prints the path to a PNG as its
+      last stdout line on success.
+   2. If it exits non-zero, tell the user the sketch was not captured and stop.
+   3. On success, Read the PNG path from the last stdout line so you can see the
+      drawing, then act on whatever the user asked. If they gave no other
+      instruction, briefly say what you see and ask what they want done with it.
+
+   $ARGUMENTS
+   ```
+
+   Use `python3` instead of `uv run python3` if you do not use uv. You can also
+   put the file in a project's `.claude/commands/` instead of the global folder,
+   in which case `/sketch` is available only when you run Claude Code in that
+   project.
+
+3. The first time you run `/sketch`, macOS may ask to let your terminal control
+   System Events (used to bring the terminal back to the front). Allow it once.
+
 ## A note about the clipboard
 
 The copy feature needs the page to run as a local file or a real website. If you open it inside a sandboxed preview, the browser blocks clipboard access and you will see a "Copy blocked" message. Running the local file in Chrome fixes it. If a copy is ever blocked, use the "Save PNG" button and drag the file in instead.
