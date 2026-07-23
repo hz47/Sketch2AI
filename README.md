@@ -6,7 +6,7 @@ Sometimes it is faster to draw a box with an arrow than to describe it in a para
 
 Try it here: https://hz47.github.io/Sketch2AI/
 
-![Sketch2AI whiteboard](screenshot.png)
+<img src="screenshot.png" alt="Sketch2AI whiteboard" width="640">
 
 ## What it does
 
