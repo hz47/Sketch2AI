@@ -84,8 +84,11 @@ ordinary Sketch2AI shape — drag it, relabel it, connect it, or delete it, and 
 it with your own drawing. `tools/sketch-diagram-bridge.py` lays out a node/edge
 graph in Python and injects it through a `?diagram=1` gate.
 
-This is the co-editing loop: **ask Claude for a diagram → rearrange and extend it
-by hand → send it back with `/sketch`** and iterate.
+This is the co-editing loop: **ask Claude for a diagram → rearrange and extend
+it by hand → send it back**, and iterate. The board also shows the **Send to
+Claude** button (⌘↵) once the diagram is drawn, so you can edit it and hand it
+straight back in the same command — no separate `/sketch` step needed. If you
+don't send anything back, the command just finishes having drawn the diagram.
 
 ### Setup
 

@@ -57,8 +57,16 @@ labels), serves the board, and opens it with `?diagram=1`.
 - Layout lives in Python on purpose: LLMs are reliable at graph *semantics* but
   not pixel coordinates, so Claude only emits nodes/edges and the code does
   geometry. Keep it that way.
-- Separate from the draw bridge: own pidfile, own single-instance guard, same
-  local-macOS-only fail-fast. The `/sketch` path is untouched.
+- Separate server process from the draw bridge: own pidfile, own
+  single-instance guard, same local-macOS-only fail-fast.
+- Closes the co-editing loop in one command: `bridgeMode()` in `index.html` is
+  gated on `?bridge=1` **or** `?diagram=1`, so the "Send to Claude" button
+  (⌘↵, POST to `/submit`) also appears on an injected diagram. The Python
+  script gained its own `/submit` handler (mirrors `sketch-bridge.py`) and,
+  after the diagram loads, blocks up to `SUBMIT_TIMEOUT_S` (570s) waiting for
+  it. A submission is optional and its absence is not an error: stdout's first
+  line is always the "drew N nodes" confirmation; a second line with the
+  edited PNG's path appears only if the user sent one back.
 
 ### Connected arrows (draw.io-style)
 

@@ -7,6 +7,13 @@ nodes with centered labels, arrows between them, optional edge labels), serves
 the whiteboard, and opens it with ?diagram=1 so the board drops the items onto
 the canvas as ordinary, editable shapes.
 
+Once the diagram is drawn, the server keeps running and the board shows a
+"Send to Claude" button (same ?bridge-style POST /submit as sketch-bridge.py,
+same origin). If the user rearranges or extends the diagram by hand and sends
+it back, this prints the resulting PNG's path as its last stdout line — the
+co-editing loop. If nothing is sent back before the timeout, it exits having
+only drawn the diagram, same as before.
+
 This is a separate, self-contained sibling of sketch-bridge.py — the draw-to-Claude
 bridge is untouched. Layout runs here in Python, so index.html needs no libraries.
 
@@ -31,12 +38,12 @@ import subprocess
 import sys
 import tempfile
 import threading
-import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX = os.path.join(ROOT, "index.html")
 PIDFILE = os.path.join(tempfile.gettempdir(), "sketch-diagram-bridge.pid")
 SERVE_TIMEOUT_S = 120  # if the board never loads, give up rather than hang
+SUBMIT_TIMEOUT_S = 570  # stay under the /sketch-diagram command's 10-minute Bash ceiling
 
 # --- visual constants (world units, matching the Sketch2AI item model) ---
 INK = "#191d24"
@@ -54,6 +61,8 @@ NODE_GAP = 46                      # space between nodes within a layer
 MARGIN = 60
 
 served = threading.Event()
+submitted = threading.Event()
+submit_result = {"path": None}
 
 
 # ---------------------------------------------------------------- layout ----
@@ -378,6 +387,24 @@ def make_handler(payload):
             else:
                 self.send_error(404)
 
+        def do_POST(self):
+            if self.path.split("?", 1)[0] != "/submit":
+                self.send_error(404)
+                return
+            length = int(self.headers.get("Content-Length", 0))
+            data = self.rfile.read(length) if length else b""
+            if not data:
+                self.send_error(400, "empty body")
+                return
+            fd, out = tempfile.mkstemp(prefix="sketch-diagram-", suffix=".png")
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            submit_result["path"] = out
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"ok")
+            submitted.set()
+
     return Handler
 
 
@@ -433,10 +460,18 @@ def main():
             print("The board did not load the diagram in time.", file=sys.stderr)
             httpd.shutdown()
             sys.exit(1)
-        time.sleep(0.4)  # let the response finish before we tear down
+        print("Drawn. Waiting for the user to rearrange it and send it back "
+              "(or the wait will time out)...", file=sys.stderr)
+        # The user may now edit by hand and click "Send to Claude" (?diagram=1
+        # gets the same button as ?bridge=1, see index.html bridgeMode). Wait
+        # for that, but drawing already succeeded either way, so a timeout here
+        # is not an error.
+        submitted.wait(SUBMIT_TIMEOUT_S)
         httpd.shutdown()
     activate_app(caller)
     print(f"Drew {node_count} nodes onto the Sketch2AI canvas.")
+    if submit_result["path"]:
+        print(submit_result["path"])
 
 
 if __name__ == "__main__":

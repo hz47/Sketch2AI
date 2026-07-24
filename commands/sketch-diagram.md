@@ -57,14 +57,21 @@ Write the JSON to a scratch file, e.g. `/tmp/sketch-diagram-graph.json`.
 
 ## 3. Draw it
 
-Run this in the foreground (it opens the board, injects the diagram, refocuses
-the terminal, and exits — pass a Bash `timeout` of 600000 ms):
+Run this in the foreground (it opens the board, injects the diagram, then waits
+for the user to optionally rearrange it and send it back before refocusing the
+terminal and exiting — pass a Bash `timeout` of 600000 ms):
 
 `uv run python3 /ABSOLUTE/PATH/TO/Sketch2AI/tools/sketch-diagram-bridge.py /tmp/sketch-diagram-graph.json`
 
-- On success it prints how many nodes it drew. Tell the user the diagram is on
-  their canvas and that every box, arrow, and label is a normal Sketch2AI shape
-  they can drag, relabel, restyle, connect, or delete.
+- On success its first stdout line reports how many nodes it drew. Tell the
+  user the diagram is on their canvas and that every box, arrow, and label is
+  a normal Sketch2AI shape they can drag, relabel, restyle, connect, or delete.
+- The board also shows a "Send to Claude" button (⌘↵) once the diagram loads.
+  If the user rearranges or extends it by hand and sends it back within about
+  9.5 minutes, a **second** stdout line appears: the path to a PNG of their
+  edited version. If it's there, Read it to see what they changed and continue
+  from that. If it's absent, they just wanted the diagram drawn — say so and
+  move on, no need to wait or ask.
 - If it exits non-zero, report the error from stderr and stop.
 
 The user's diagram request:

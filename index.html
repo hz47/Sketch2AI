@@ -986,11 +986,14 @@
   document.getElementById("savepng").addEventListener("click", savePng);
 
   // ---------- Claude Code bridge ----------
-  // Only active when the sketch CLI opens the board as ?bridge=1 (served from the
-  // local bridge server). Adds a "Send to Claude" button that POSTs the visible
-  // canvas to /submit on the same origin. The hosted page never sees this.
+  // Active when the sketch CLI opens the board as ?bridge=1, or the diagram CLI
+  // opens it as ?diagram=1 (served from either local bridge server). Adds a
+  // "Send to Claude" button that POSTs the visible canvas to /submit on the
+  // same origin, so an injected diagram can be edited by hand and sent back.
+  // The hosted page never sees this.
   (function bridgeMode() {
-    if (!new URLSearchParams(location.search).has("bridge")) return;
+    const params = new URLSearchParams(location.search);
+    if (!params.has("bridge") && !params.has("diagram")) return;
     const btn = document.createElement("button");
     btn.className = "tool"; btn.id = "sendclaude";
     btn.title = "Send this drawing to your Claude Code session (⌘↵)";
@@ -1040,7 +1043,7 @@
         }
         if (!added) { setStatus("err", "Diagram was empty"); return; }
         fitToContent();
-        setStatus("ok", "Diagram drawn ✓  drag anything to edit");
+        setStatus("ok", "Diagram drawn ✓  edit it, then ⌘↵ to send back");
       })
       .catch((err) => setStatus("err", "Diagram load failed (" + (err.message || err) + ")"));
   })();
