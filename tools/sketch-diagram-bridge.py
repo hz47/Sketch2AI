@@ -14,6 +14,16 @@ it back, this prints the resulting PNG's path as its last stdout line — the
 co-editing loop. If nothing is sent back before the timeout, it exits having
 only drawn the diagram, same as before.
 
+Repeated calls reuse one board tab instead of opening a new one each time:
+the server always binds DIAGRAM_PORT, and a small session file (SESSION_FILE)
+remembers what has been drawn so far. A later call appends its new nodes to
+that session (never redrawing or moving anything already on the canvas — the
+open tab, and whatever the user has done to it by hand, is left alone) and
+pushes just the delta to the already-open tab over Server-Sent Events, which
+the browser reconnects to automatically once the new call's server is up. A
+call finds nothing to reuse (fresh session, or the last one is older than
+SESSION_TTL_S) and opens a new tab instead.
+
 This is a separate, self-contained sibling of sketch-bridge.py — the draw-to-Claude
 bridge is untouched. Layout runs here in Python, so index.html needs no libraries.
 
@@ -30,26 +40,34 @@ input is forgiving. `shape` may be "rect" (default) or "ellipse".
 """
 import http.server
 import json
+import math
 import os
 import shutil
 import signal
-import socketserver
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX = os.path.join(ROOT, "index.html")
 PIDFILE = os.path.join(tempfile.gettempdir(), "sketch-diagram-bridge.pid")
+SESSION_FILE = os.path.join(tempfile.gettempdir(), "sketch-diagram-session.json")
+DIAGRAM_PORT = 48717  # fixed, so a later call can find the tab an earlier one opened
+SESSION_TTL_S = 4 * 3600  # a session (and its open tab) older than this counts as gone
+PUSH_GAP = 100  # world-unit gap placed between successive pushes' bounding boxes
 SERVE_TIMEOUT_S = 120  # if the board never loads, give up rather than hang
 SUBMIT_TIMEOUT_S = 570  # stay under the /sketch-diagram command's 10-minute Bash ceiling
 
 # --- visual constants (world units, matching the Sketch2AI item model) ---
 INK = "#191d24"
+EDGE_INK = "#5b6577"          # connectors a shade lighter than the node borders
 MUTED = "#626d84"
-NODE_LINE = 3
-EDGE_LINE = 2.5
+NODE_LINE = 1.8
+EDGE_LINE = 1.2               # the board's "thin" preset, so the format bar can reproduce this
+EDGE_DASH = [4.5, 3.5]        # short dashes, so a connector reads lighter than a box
+EDGE_HEAD = 8                 # small arrowhead; the default is sized for pen strokes
 FONT_SIZE = 16
 EDGE_LABEL_SIZE = 13
 CHAR_W = FONT_SIZE * 0.58          # rough advance width for the sans label font
@@ -60,9 +78,10 @@ RANK_GAP = 84                      # space between layers
 NODE_GAP = 46                      # space between nodes within a layer
 MARGIN = 60
 
-served = threading.Event()
+delivered = threading.Event()  # set once the new items reach a tab, fresh or reused
 submitted = threading.Event()
 submit_result = {"path": None}
+session_lock = threading.Lock()  # guards read-modify-write of SESSION_FILE across requests
 
 
 # ---------------------------------------------------------------- layout ----
@@ -184,8 +203,17 @@ def _box_edge_point(cx, cy, hw, hh, tx, ty):
     return cx + dx * s, cy + dy * s
 
 
-def layout(graph):
-    """Turn a {nodes, edges, direction} graph into Sketch2AI items."""
+def layout(graph, known_ids=None, offset=(0, 0)):
+    """Turn a {nodes, edges, direction} graph into Sketch2AI items.
+
+    known_ids are box ids (see nid_of below) already drawn by an earlier push
+    in this session: they may still be referenced by new edges (so a new node
+    can connect to an existing one) but no box item is emitted for them again
+    — the live canvas, and whatever the user did to that box by hand, is left
+    alone. offset shifts every new coordinate, so a later push lands clear of
+    what is already on the canvas instead of on top of it.
+    """
+    known_ids = known_ids or set()
     direction = str(graph.get("direction", "TB")).upper()
     horizontal = direction in ("LR", "RL")
 
@@ -268,16 +296,22 @@ def layout(graph):
     # Normalize to positive coordinates with a margin.
     minx = min(centers[n][0] - node[n]["w"] / 2 for n in order_ids)
     miny = min(centers[n][1] - node[n]["h"] / 2 for n in order_ids)
-    ox, oy = MARGIN - minx, MARGIN - miny
+    ox, oy = MARGIN - minx + offset[0], MARGIN - miny + offset[1]
     for n in order_ids:
         cx, cy = centers[n]
         centers[n] = (cx + ox, cy + oy)
 
     # Stable ids so arrows/labels can stay connected to their boxes when the
-    # user drags things around on the canvas (see refreshConnectors in the app).
-    nid_of = {n: "dgm:" + n for n in order_ids}
+    # user drags things around on the canvas (see refreshConnectors in the
+    # app). A graph id that already matches a known box exactly (e.g. "b1"
+    # from --list-boxes, a hand-drawn box) is used as-is so the edge attaches
+    # to that real box instead of minting a "dgm:b1" duplicate; anything else
+    # gets this push's own "dgm:" namespace.
+    nid_of = {n: (n if n in known_ids else "dgm:" + n) for n in order_ids}
 
     items = []
+    labels = []   # appended after every arrow, so no arrow paints over a label
+    slot = {}     # labels already placed per (from, to), to stack repeats
     # Draw edges first so nodes sit on top.
     for e in edges:
         a, b = e["from"], e["to"]
@@ -287,18 +321,34 @@ def layout(graph):
         x2, y2 = _box_edge_point(bx, by, node[b]["w"] / 2, node[b]["h"] / 2, ax, ay)
         items.append({"type": "shape", "kind": "arrow", "x1": round(x1, 1),
                       "y1": round(y1, 1), "x2": round(x2, 1), "y2": round(y2, 1),
-                      "color": INK, "size": EDGE_LINE,
+                      "color": EDGE_INK, "size": EDGE_LINE, "dash": EDGE_DASH,
+                      "head": EDGE_HEAD, "headFill": True,
                       "from": nid_of[a], "to": nid_of[b]})
         if e.get("label"):
-            lx, ly = (x1 + x2) / 2, (y1 + y2) / 2
             label = str(e["label"])
-            items.append({"type": "text", "text": label,
-                          "x": round(lx - len(label) * EDGE_LABEL_SIZE * 0.29, 1),
-                          "y": round(ly - EDGE_LABEL_SIZE, 1),
-                          "size": EDGE_LABEL_SIZE, "color": MUTED,
-                          "from": nid_of[a], "to": nid_of[b]})
+            # Beside the line rather than on it (the board's refreshConnectors
+            # keeps it there when boxes move): step off along the edge normal,
+            # which flips with direction so a->b and b->a sit on opposite
+            # sides, and stack any repeat of the same direction further out.
+            lw = len(label) * EDGE_LABEL_SIZE * 0.58 + 6
+            lh = EDGE_LABEL_SIZE * 1.25 + 4
+            ln = math.hypot(x2 - x1, y2 - y1) or 1.0
+            nx, ny = -(y2 - y1) / ln, (x2 - x1) / ln
+            k = slot.get((a, b), 0)
+            slot[(a, b)] = k + 1
+            off = (abs(nx) * (lw / 2 + 5) + abs(ny) * (lh / 2 + 5)
+                   + k * (abs(nx) * (lw + 4) + abs(ny) * (lh + 2)))
+            lx = (x1 + x2) / 2 + nx * off
+            ly = (y1 + y2) / 2 + ny * off
+            labels.append({"type": "text", "text": label,
+                           "x": round(lx - lw / 2, 1), "y": round(ly - lh / 2, 1),
+                           "size": EDGE_LABEL_SIZE, "color": MUTED,
+                           "from": nid_of[a], "to": nid_of[b]})
+    items.extend(labels)
 
     for n in order_ids:
+        if nid_of[n] in known_ids:
+            continue  # already on the canvas from an earlier push; anchor only
         cx, cy = centers[n]
         w, h = node[n]["w"], node[n]["h"]
         kind = "ellipse" if node[n].get("shape") == "ellipse" else "rect"
@@ -356,8 +406,34 @@ def activate_app(name):
         check=False, capture_output=True)
 
 
-def make_handler(payload):
-    body = json.dumps({"items": payload}).encode("utf-8")
+def load_session(ignore_ttl=False):
+    """The current session {items, push_id, max_x, max_y, live_boxes}, or None
+    if there isn't a live one (never used, or its tab is presumed gone by
+    now). ignore_ttl is for a /sync request updating a session this same
+    still-running server already vouched for as live."""
+    try:
+        if not ignore_ttl and time.time() - os.path.getmtime(SESSION_FILE) > SESSION_TTL_S:
+            return None
+        with open(SESSION_FILE) as f:
+            data = json.load(f)
+        if isinstance(data, dict) and isinstance(data.get("items"), list):
+            return data
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def save_session(data):
+    try:
+        with open(SESSION_FILE, "w") as f:
+            json.dump(data, f)
+    except OSError:
+        pass
+
+
+def make_handler(all_items, new_items, push_id):
+    diagram_body = json.dumps({"items": all_items, "pushId": push_id}).encode("utf-8")
+    new_body = json.dumps({"items": new_items, "pushId": push_id}).encode("utf-8")
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -378,34 +454,103 @@ def make_handler(payload):
                 self.end_headers()
                 self.wfile.write(html)
             elif path == "/diagram":
+                # A fresh tab's one-time load: everything drawn in this session
+                # so far (earlier pushes plus this one).
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Content-Length", str(len(diagram_body)))
                 self.end_headers()
-                self.wfile.write(body)
-                served.set()
+                self.wfile.write(diagram_body)
+                delivered.set()
+            elif path == "/events":
+                # An already-open tab's EventSource, auto-reconnecting here
+                # after the previous call's server exited. Just this call's
+                # new items — the client tracks pushId so a reconnect within
+                # the same call's lifetime never double-applies them.
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                try:
+                    self.wfile.write(b"retry: 4000\n")
+                    self.wfile.write(b"data: " + new_body + b"\n\n")
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                delivered.set()
             else:
                 self.send_error(404)
 
         def do_POST(self):
-            if self.path.split("?", 1)[0] != "/submit":
+            path = self.path.split("?", 1)[0]
+            if path == "/submit":
+                length = int(self.headers.get("Content-Length", 0))
+                data = self.rfile.read(length) if length else b""
+                if not data:
+                    self.send_error(400, "empty body")
+                    return
+                fd, out = tempfile.mkstemp(prefix="sketch-diagram-", suffix=".png")
+                with os.fdopen(fd, "wb") as f:
+                    f.write(data)
+                submit_result["path"] = out
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"ok")
+                submitted.set()
+            elif path == "/sync":
+                # The board reports its full current box list (id + label)
+                # after every committed change, Claude-drawn or hand-drawn, so
+                # a later push can look one up and connect to it by id — see
+                # known_ids in main() and --list-boxes.
+                length = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(length) if length else b""
+                try:
+                    payload = json.loads(raw) if raw else {}
+                except ValueError:
+                    payload = {}
+                boxes = payload.get("boxes") if isinstance(payload, dict) else None
+                boxes = [b for b in boxes if isinstance(b, dict) and b.get("id")] if isinstance(boxes, list) else []
+                with session_lock:
+                    data = load_session(ignore_ttl=True) or {"items": [], "push_id": 0, "max_x": 0, "max_y": 0}
+                    data["live_boxes"] = [{"id": str(b["id"]), "text": str(b.get("text", ""))} for b in boxes]
+                    save_session(data)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"ok")
+            else:
                 self.send_error(404)
-                return
-            length = int(self.headers.get("Content-Length", 0))
-            data = self.rfile.read(length) if length else b""
-            if not data:
-                self.send_error(400, "empty body")
-                return
-            fd, out = tempfile.mkstemp(prefix="sketch-diagram-", suffix=".png")
-            with os.fdopen(fd, "wb") as f:
-                f.write(data)
-            submit_result["path"] = out
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"ok")
-            submitted.set()
 
     return Handler
+
+
+def known_boxes(session):
+    """{id: label} for every box drawn so far this session — from Claude's own
+    pushes and from the board's live /sync reports, which also cover boxes
+    the user drew or relabeled by hand."""
+    if not session:
+        return {}
+    known = {}
+    for it in session.get("items", []):
+        if it.get("type") == "shape" and it.get("id"):
+            known[it["id"]] = it.get("text", it["id"])
+    for b in session.get("live_boxes", []):
+        if b.get("id"):
+            known[b["id"]] = b.get("text") or b["id"]
+    return known
+
+
+def list_boxes():
+    """Standalone lookup (`--list-boxes`, no graph needed): print every box
+    currently known for this session as `id<TAB>label`, one per line, so a
+    new push's edges can reference an existing box — including one the user
+    drew or renamed by hand — by its real id instead of guessing."""
+    known = known_boxes(load_session())
+    if not known:
+        print("No diagram session yet, or nothing is on the canvas.")
+        return
+    for box_id, label in known.items():
+        print(f"{box_id}\t{label}")
 
 
 def read_graph():
@@ -426,6 +571,9 @@ def read_graph():
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--list-boxes":
+        list_boxes()
+        return
     if sys.platform != "darwin" or not shutil.which("open"):
         print("/sketch-diagram only works in Claude Code running locally on a Mac "
               "— it opens a browser on your machine, so it can't run in a remote, "
@@ -436,28 +584,71 @@ def main():
         sys.exit(2)
 
     graph = read_graph()
+
+    session = load_session()
+    prev_items = session["items"] if session else []
+    known = known_boxes(session)
+    known_ids = set(known)
+    if known:
+        listing = ", ".join(f'{k}="{v}"' for k, v in known.items())
+        print(f"Boxes already on the canvas: {listing}", file=sys.stderr)
+    max_x = session.get("max_x", 0) if session else 0
+    max_y = session.get("max_y", 0) if session else 0
+    push_id = (session.get("push_id", 0) if session else 0) + 1
+    reuse_tab = session is not None
+
+    horizontal = str(graph.get("direction", "TB")).upper() in ("LR", "RL")
+    if not prev_items:
+        offset = (0, 0)
+    elif horizontal:
+        offset = (max_x + PUSH_GAP, 0)
+    else:
+        offset = (0, max_y + PUSH_GAP)
+
     try:
-        items = layout(graph)
+        new_items = layout(graph, known_ids=known_ids, offset=offset)
     except Exception as e:
         print(f"Layout failed: {e}", file=sys.stderr)
         sys.exit(4)
-    if not items:
-        print("Graph had no nodes to draw.", file=sys.stderr)
+    if not new_items:
+        print("Graph had no new nodes or edges to draw.", file=sys.stderr)
         sys.exit(5)
+
+    node_count = sum(1 for it in new_items if it.get("type") == "shape"
+                     and it.get("kind") in ("rect", "ellipse"))
+    boxes = [it for it in new_items if it.get("type") == "shape"
+             and it.get("kind") in ("rect", "ellipse")]
+    max_x = max([max_x] + [it["x"] + it["w"] for it in boxes])
+    max_y = max([max_y] + [it["y"] + it["h"] for it in boxes])
+    all_items = prev_items + new_items
+    save_session({"items": all_items, "push_id": push_id, "max_x": max_x, "max_y": max_y})
 
     ensure_single_instance()
     caller = frontmost_app()
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("127.0.0.1", 0), make_handler(items)) as httpd:
-        port = httpd.server_address[1]
+    try:
+        httpd = http.server.ThreadingHTTPServer(
+            ("127.0.0.1", DIAGRAM_PORT), make_handler(all_items, new_items, push_id))
+    except OSError as e:
+        print(f"Could not bind port {DIAGRAM_PORT}: {e}", file=sys.stderr)
+        sys.exit(6)
+    with httpd:
         threading.Thread(target=httpd.serve_forever, daemon=True).start()
-        url = f"http://127.0.0.1:{port}/?diagram=1"
-        node_count = sum(1 for it in items if it.get("type") == "shape"
-                         and it.get("kind") in ("rect", "ellipse"))
-        print(f"Diagram ready ({node_count} nodes) at {url}", file=sys.stderr)
-        subprocess.run(["open", url], check=False)
-        if not served.wait(SERVE_TIMEOUT_S):
-            print("The board did not load the diagram in time.", file=sys.stderr)
+        url = f"http://127.0.0.1:{DIAGRAM_PORT}/?diagram=1"
+        print(f"Diagram ready ({node_count} new node(s)) at {url}", file=sys.stderr)
+        if reuse_tab:
+            print("Reusing the board tab that's already open.", file=sys.stderr)
+        else:
+            subprocess.run(["open", url], check=False)
+        if not delivered.wait(SERVE_TIMEOUT_S) and reuse_tab:
+            # Assumed-open tab never reconnected — it may have been closed, or
+            # hit a hard error while the previous call's server was down (a
+            # dead ERR_CONNECTION_REFUSED page has no JS running to retry).
+            # Fall back to opening a fresh one rather than failing outright.
+            print("That tab didn't respond — opening a new one instead.", file=sys.stderr)
+            subprocess.run(["open", url], check=False)
+            delivered.wait(SERVE_TIMEOUT_S)
+        if not delivered.is_set():
+            print("The board did not pick up the diagram in time.", file=sys.stderr)
             httpd.shutdown()
             sys.exit(1)
         print("Drawn. Waiting for the user to rearrange it and send it back "
@@ -469,7 +660,8 @@ def main():
         submitted.wait(SUBMIT_TIMEOUT_S)
         httpd.shutdown()
     activate_app(caller)
-    print(f"Drew {node_count} nodes onto the Sketch2AI canvas.")
+    print(f"Drew {node_count} new node(s) onto the Sketch2AI canvas "
+          f"({len(all_items)} items total in this session).")
     if submit_result["path"]:
         print(submit_result["path"])
 
