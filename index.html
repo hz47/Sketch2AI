@@ -122,6 +122,25 @@
   .zoombar .sep { width: 1px; align-self: stretch; background: var(--line); }
   .zoombar #zoomreset { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; min-width: 52px; font-variant-numeric: tabular-nums; }
 
+  /* Contextual format bar: appears while a shape is selected, so a line can be
+     restyled (weight, dashes, arrowhead) the same way the diagram bridge draws one. */
+  .stylebar {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+    display: none; align-items: center; gap: 7px; padding: 6px 8px;
+    background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px;
+    box-shadow: var(--shadow); z-index: 4; user-select: none;
+  }
+  .stylebar.on { display: inline-flex; }
+  .stylebar .grp { display: flex; align-items: center; gap: 4px; padding-right: 7px; border-right: 1px solid var(--line); }
+  .stylebar .grp:last-child { border-right: none; padding-right: 0; }
+  .sty {
+    width: 34px; height: 27px; border-radius: 7px; border: 1px solid var(--line-strong);
+    background: var(--panel); color: var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
+  }
+  .sty:hover { border-color: var(--muted); }
+  .sty[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .sty svg { width: 24px; height: 16px; }
+
   .hint {
     position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
     text-align: center; color: #b3bac4; padding: 24px;
@@ -183,6 +202,7 @@
     <button class="swatch" data-color="#3b5bff" aria-label="Blue" style="background:#3b5bff"></button>
     <button class="swatch" data-color="#2ba24c" aria-label="Green" style="background:#2ba24c"></button>
     <button class="swatch" data-color="#e8a80c" aria-label="Amber" style="background:#e8a80c"></button>
+    <button class="swatch" data-color="#5b6577" aria-label="Slate (connector grey)" style="background:#5b6577"></button>
   </div>
 
   <div class="group">
@@ -192,6 +212,12 @@
   </div>
 
   <div class="group">
+    <button class="tool icon" id="openboard" title="Open a board file (⌘O)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="m9.5 14.5 2.5-2.5 2.5 2.5"/></svg>
+    </button>
+    <button class="tool icon" id="saveboard" title="Save the board as an editable file (⌘S)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="m9.5 15.5 2.5 2.5 2.5-2.5"/></svg>
+    </button>
     <button class="tool icon" id="addimg" title="Add image">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 3 3 4-4 4 4"/></svg>
     </button>
@@ -204,8 +230,11 @@
     <button class="tool icon" id="toback" title="Send to back (⌘[)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M20 8v12H8"/></svg>
     </button>
-    <button class="tool icon" id="undo" title="Undo (⌘Z)">
+    <button class="tool icon" id="undo" title="Undo the last change (⌘Z)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10H9"/></svg>
+    </button>
+    <button class="tool icon" id="redo" title="Redo (⇧⌘Z)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h6"/></svg>
     </button>
     <button class="tool icon danger" id="clear" title="Clear the canvas">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13h10l1-13"/></svg>
@@ -223,7 +252,7 @@
   <button class="tool" id="savepng" title="Download the visible canvas as a PNG">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Save PNG
   </button>
-  <input type="file" id="fileinput" accept="image/*" multiple hidden>
+  <input type="file" id="fileinput" accept="image/*,.json,application/json" multiple hidden>
 </div>
 
 <div class="stage">
@@ -238,6 +267,41 @@
     </div>
   </div>
   <div class="status" id="status"><span class="dot"></span><span id="statustext">Ready — auto-copy is on</span></div>
+  <div class="stylebar" id="stylebar">
+    <div class="grp">
+      <button class="sty" data-w="1.2" title="Thin line">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="1"/></svg>
+      </button>
+      <button class="sty" data-w="2.5" title="Medium line">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="2.2"/></svg>
+      </button>
+      <button class="sty" data-w="4.5" title="Thick line">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="4"/></svg>
+      </button>
+    </div>
+    <div class="grp">
+      <button class="sty" data-dash="solid" title="Solid">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="1.6"/></svg>
+      </button>
+      <button class="sty" data-dash="dashed" title="Dashed">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="1.6" stroke-dasharray="5 4"/></svg>
+      </button>
+      <button class="sty" data-dash="dotted" title="Dotted">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="1.8" stroke-dasharray="0.1 3.6"/></svg>
+      </button>
+    </div>
+    <div class="grp" id="sty-head">
+      <button class="sty" data-head="none" title="No arrowhead">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 8h20" stroke-width="1.6"/></svg>
+      </button>
+      <button class="sty" data-head="open" title="Open arrowhead">
+        <svg viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h19" stroke-width="1.6"/><path d="m16 4 5 4-5 4" stroke-width="1.6"/></svg>
+      </button>
+      <button class="sty" data-head="fill" title="Solid arrowhead">
+        <svg viewBox="0 0 24 16" stroke="currentColor" stroke-linecap="round"><path d="M2 8h16" fill="none" stroke-width="1.6"/><path d="m22 8-7-3.4v6.8z" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+  </div>
   <div class="zoombar">
     <button id="zoomout" title="Zoom out" aria-label="Zoom out">&minus;</button>
     <span class="sep"></span>
@@ -355,6 +419,8 @@
     g.save();
     g.strokeStyle = sh.color; g.fillStyle = sh.color; g.lineWidth = sh.size;
     g.lineJoin = "round"; g.lineCap = "round";
+    // Optional dashed outline (the diagram bridge uses it for connectors).
+    if (sh.dash) g.setLineDash(Array.isArray(sh.dash) ? sh.dash : [5, 4]);
     if (sh.kind === "rect") {
       const r = Math.min(6, Math.abs(sh.w) / 4, Math.abs(sh.h) / 4);
       g.beginPath();
@@ -364,12 +430,24 @@
       g.beginPath(); g.ellipse(sh.x + sh.w / 2, sh.y + sh.h / 2, Math.abs(sh.w) / 2, Math.abs(sh.h) / 2, 0, 0, Math.PI * 2); g.stroke();
     } else if (sh.kind === "line" || sh.kind === "arrow") {
       g.beginPath(); g.moveTo(sh.x1, sh.y1); g.lineTo(sh.x2, sh.y2); g.stroke();
+      g.setLineDash([]);                    // the head stays solid on a dashed shaft
       if (sh.kind === "arrow") {
-        const ang = Math.atan2(sh.y2 - sh.y1, sh.x2 - sh.x1), len = 10 + sh.size * 2.2;
+        // `head` overrides the arrowhead length, so a thin connector can carry a
+        // small head instead of one scaled for a hand-drawn stroke; `headFill`
+        // closes it into a solid triangle, which stays crisp at that size where
+        // the open pen-style head goes wispy.
+        const ang = Math.atan2(sh.y2 - sh.y1, sh.x2 - sh.x1), len = sh.head || 10 + sh.size * 2.2;
+        const spread = sh.headFill ? 0.34 : 0.42;
+        const lx = sh.x2 - len * Math.cos(ang - spread), ly = sh.y2 - len * Math.sin(ang - spread);
+        const rx = sh.x2 - len * Math.cos(ang + spread), ry = sh.y2 - len * Math.sin(ang + spread);
         g.beginPath();
-        g.moveTo(sh.x2, sh.y2); g.lineTo(sh.x2 - len * Math.cos(ang - 0.42), sh.y2 - len * Math.sin(ang - 0.42));
-        g.moveTo(sh.x2, sh.y2); g.lineTo(sh.x2 - len * Math.cos(ang + 0.42), sh.y2 - len * Math.sin(ang + 0.42));
-        g.stroke();
+        if (sh.headFill) {
+          g.moveTo(sh.x2, sh.y2); g.lineTo(lx, ly); g.lineTo(rx, ry); g.closePath(); g.fill();
+        } else {
+          g.moveTo(sh.x2, sh.y2); g.lineTo(lx, ly);
+          g.moveTo(sh.x2, sh.y2); g.lineTo(rx, ry);
+          g.stroke();
+        }
       }
     }
     if (sh.text && (sh.kind === "rect" || sh.kind === "ellipse")) {
@@ -386,7 +464,11 @@
     else if (it.type === "shape") drawShape(g, it);
     else if (it.type === "text") {
       measureText(it);
-      g.save(); g.fillStyle = it.color; g.textAlign = "left"; g.textBaseline = "top"; g.font = it.size + "px " + FONT;
+      g.save();
+      // A connector label gets a sheet-colored plate under it, so a line or
+      // arrow passing behind stays out of the letters. Hand text stays plain.
+      if (it.from || it.to) { g.fillStyle = SHEET; g.fillRect(it.x - 1, it.y, it._w + 2, it._h); }
+      g.fillStyle = it.color; g.textAlign = "left"; g.textBaseline = "top"; g.font = it.size + "px " + FONT;
       it.text.split("\n").forEach((ln, i) => g.fillText(ln, it.x + 3, it.y + 2 + i * it.size * 1.25));
       g.restore();
     }
@@ -474,6 +556,28 @@
   let _idc = 0;
   function freshId() { return "b" + (++_idc); }
   function ensureId(box) { if (!box.id) box.id = freshId(); return box.id; }
+
+  // In diagram-bridge mode (see diagramMode() below), every box on the canvas
+  // — Claude-drawn or hand-drawn — is reported back to the local server after
+  // each committed change, so a later /sketch-diagram call can look up and
+  // connect to a box the user drew or relabeled by hand, not just its own.
+  // A no-op everywhere else (diagramSyncEnabled stays false).
+  let diagramSyncEnabled = false;
+  let diagramSyncTimer = null;
+  function syncDiagramState() {
+    if (!diagramSyncEnabled) return;
+    clearTimeout(diagramSyncTimer);
+    diagramSyncTimer = setTimeout(() => {
+      const boxes = items
+        .filter((it) => it.type === "shape" && (it.kind === "rect" || it.kind === "ellipse"))
+        .map((it) => ({ id: ensureId(it), text: it.text || "" }));
+      fetch("/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boxes }),
+      }).catch(() => {});
+    }, 600);
+  }
   function boxAt(wx, wy) {
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
@@ -512,8 +616,47 @@
       : { x: otherBox.x + otherBox.w / 2, y: otherBox.y + otherBox.h / 2 };
     return boundaryPoint(box, target.x, target.y);
   }
+  // Candidate label spots, cheapest first: t slides along the connector, k steps
+  // sideways off it in whole label widths (sign = which side of the line).
+  const LABEL_SPOTS = [];
+  for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74])
+    for (const k of [1, -1, 2, -2, 3, -3])
+      LABEL_SPOTS.push({ t, k, cost: (Math.abs(k) - 1) * 2 + Math.abs(t - 0.5) * 6 + (k < 0 ? 0.4 : 0) });
+  LABEL_SPOTS.sort((p, q) => p.cost - q.cost);
+  function rectsHit(a, b) {
+    return a.x - 2 < b.x + b.w && b.x - 2 < a.x + a.w && a.y - 2 < b.y + b.h && b.y - 2 < a.y + a.h;
+  }
+  // Put every connector label beside its own line and clear of the boxes and of
+  // the labels already placed. Centering it on the line, as this used to do,
+  // let an arrow run through the letters and let two labels (a->b and b->a in
+  // particular, whose midpoints coincide) print on top of each other.
+  function placeLabels(pending) {
+    const boxes = [];
+    for (const it of items)
+      if (it.type === "shape" && (it.kind === "rect" || it.kind === "ellipse")) boxes.push(bounds(it));
+    const taken = [];
+    for (const { it, p1, p2 } of pending) {
+      measureText(it);
+      const dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;   // flips with direction, so a->b and b->a take opposite sides
+      const near = Math.abs(nx) * it._w / 2 + Math.abs(ny) * it._h / 2 + 6;
+      const stride = Math.abs(nx) * (it._w + 4) + Math.abs(ny) * (it._h + 3);
+      let spot = null;
+      for (const c of LABEL_SPOTS) {
+        const d = (near + (Math.abs(c.k) - 1) * stride) * Math.sign(c.k);
+        const r = { x: p1.x + dx * c.t + nx * d - it._w / 2,
+          y: p1.y + dy * c.t + ny * d - it._h / 2, w: it._w, h: it._h };
+        if (!spot) spot = r;                 // first candidate is the fallback
+        if (boxes.some((o) => rectsHit(r, o)) || taken.some((o) => rectsHit(r, o))) continue;
+        spot = r; break;
+      }
+      it.x = spot.x; it.y = spot.y; taken.push(spot);
+    }
+  }
   function refreshConnectors() {
     let byId = null;
+    const pending = [];  // connector labels, placed together once the ends are known
+    const parallel = new Map();  // connectors sharing a box pair, fanned out below
     for (const it of items) {
       if (!it.from && !it.to) continue;
       if (it.type !== "shape" && it.type !== "text") continue;
@@ -521,16 +664,18 @@
       const a = it.from ? byId[it.from] : null, b = it.to ? byId[it.to] : null;
       const aok = a && a.type === "shape", bok = b && b.type === "shape";
       if (it.type === "text") {
-        if (!aok || !bok) continue;  // labels sit at the midpoint of both ends
-        const p1 = endpointPoint(a, it.fromPort, b, it.toPort);
-        const p2 = endpointPoint(b, it.toPort, a, it.fromPort);
-        measureText(it); it.x = (p1.x + p2.x) / 2 - it._w / 2; it.y = (p1.y + p2.y) / 2 - it._h / 2;
+        if (!aok || !bok) continue;  // labels ride the line between both ends
+        pending.push({ it, p1: endpointPoint(a, it.fromPort, b, it.toPort),
+          p2: endpointPoint(b, it.toPort, a, it.fromPort) });
         continue;
       }
       if (aok && bok) {
         const p1 = endpointPoint(a, it.fromPort, b, it.toPort);
         const p2 = endpointPoint(b, it.toPort, a, it.fromPort);
         it.x1 = p1.x; it.y1 = p1.y; it.x2 = p2.x; it.y2 = p2.y;
+        const key = it.from < it.to ? it.from + "|" + it.to : it.to + "|" + it.from;
+        if (!parallel.has(key)) parallel.set(key, []);
+        parallel.get(key).push(it);
       } else if (aok) {                       // start attached, free end stays put
         const p1 = it.fromPort ? anchorPoint(a, it.fromPort) : boundaryPoint(a, it.x2, it.y2);
         it.x1 = p1.x; it.y1 = p1.y;
@@ -538,6 +683,26 @@
         const p2 = it.toPort ? anchorPoint(b, it.toPort) : boundaryPoint(b, it.x1, it.y1);
         it.x2 = p2.x; it.y2 = p2.y;
       }
+    }
+    fanOutParallel(parallel);
+    if (pending.length) placeLabels(pending);
+  }
+  // Connectors between the same two boxes land on the same endpoints and overprint:
+  // an a->b / b->a pair reads as one double-headed line, and two dashed ones even
+  // interleave into a solid one. Spread the group sideways instead, draw.io style.
+  // The offset uses one reference normal for the whole group, since each member's
+  // own normal flips with its direction and would push them all the same way.
+  const PARALLEL_GAP = 7;
+  function fanOutParallel(groups) {
+    for (const group of groups.values()) {
+      if (group.length < 2) continue;
+      const ref = group[0];
+      const len = Math.hypot(ref.x2 - ref.x1, ref.y2 - ref.y1) || 1;
+      const nx = -(ref.y2 - ref.y1) / len, ny = (ref.x2 - ref.x1) / len;
+      group.forEach((it, i) => {
+        const off = (i - (group.length - 1) / 2) * PARALLEL_GAP;
+        it.x1 += nx * off; it.y1 += ny * off; it.x2 += nx * off; it.y2 += ny * off;
+      });
     }
   }
   function render(overlay = true) {
@@ -548,6 +713,8 @@
     screenT();
     if (overlay) { if (selection.length) drawSelectionOverlay(); if (marquee) drawMarquee(); drawPorts(); }
     hint.style.display = items.length ? "none" : "";
+    syncStyleBar();
+    scheduleLocalSave();
   }
   function refreshColors() {
     const cs = getComputedStyle(document.documentElement);
@@ -775,7 +942,23 @@
     if (!hit) return;
     if (hit.type === "text") { selectOnly(hit); openTextEditor(hit.x, hit.y, hit); }
     else if (hit.type === "shape" && (hit.kind === "rect" || hit.kind === "ellipse")) { selectOnly(hit); openLabelEditor(hit); }
+    else if (hit.type === "shape") { selectOnly(hit); openConnectorLabel(hit); }
   });
+  // Double-clicking a line or arrow edits its label, creating one if it has none.
+  // A connector between two boxes gets a label that carries the same from/to, so
+  // placeLabels keeps it beside the line; a loose line gets plain text instead.
+  function openConnectorLabel(sh) {
+    let lab = sh.from && sh.to
+      ? items.find((it) => it.type === "text" && it.from === sh.from && it.to === sh.to) : null;
+    if (!lab) {
+      lab = { type: "text", text: "", size: 14, color: sh.color,
+        x: (sh.x1 + sh.x2) / 2, y: (sh.y1 + sh.y2) / 2 };
+      if (sh.from && sh.to) { lab.from = sh.from; lab.to = sh.to; }
+      items.push(lab); render();          // lets placeLabels settle it before we sit the editor on it
+    }
+    openTextEditor(lab.x, lab.y, lab);
+    setStatus("neutral", "Label the connector — click away when done");
+  }
 
   // ---------- zoom + pan ----------
   function setScaleAt(sx, sy, ns) {
@@ -879,8 +1062,101 @@
     measureText(it); it.x -= it._w / 2; it.y -= it._h / 2; items.push(it);
     state.tool = "select"; syncTools(); applyCursor(); selectOnly(it); setStatus("ok", "Text added"); commit(true);
   }
-  fileInput.addEventListener("change", () => { for (const f of fileInput.files) if (f.type.startsWith("image/")) addImageFromBlob(f); fileInput.value = ""; });
+  fileInput.addEventListener("change", () => {
+    for (const f of fileInput.files) {
+      if (isBoardFile(f)) openBoardFile(f);
+      else if (f.type.startsWith("image/")) addImageFromBlob(f);
+    }
+    fileInput.value = "";
+  });
   document.getElementById("addimg").addEventListener("click", () => fileInput.click());
+
+  // ---------- board files and autosave ----------
+  // The board also saves as JSON — every item, not a flattened picture — so a
+  // diagram can be reopened and edited later. The same document autosaves to
+  // localStorage, so closing the tab does not lose the drawing.
+  const STORE_KEY = "sketch2ai.board.v1";
+  function isBoardFile(f) { return f.type === "application/json" || /\.json$/i.test(f.name); }
+  function imageSrc(it) {
+    const src = (it.img && it.img.src) || "";
+    if (src.startsWith("data:")) return src;
+    try {                      // blob: and file URLs die with the page, so bake the pixels in
+      const off = document.createElement("canvas");
+      off.width = it.img.naturalWidth || Math.round(it.w);
+      off.height = it.img.naturalHeight || Math.round(it.h);
+      off.getContext("2d").drawImage(it.img, 0, 0, off.width, off.height);
+      return off.toDataURL("image/png");
+    } catch (err) { return src; }   // cross-origin canvas taint: keep the URL instead
+  }
+  function serializeBoard() {
+    return {
+      app: "Sketch2AI", version: 1,
+      view: { scale: view.scale, x: view.x, y: view.y },
+      items: items.map((it) => {
+        if (it.type === "image") { const { img, ...rest } = it; return { ...rest, src: imageSrc(it) }; }
+        if (it.type === "text") { const { _w, _h, ...rest } = it; return rest; }
+        return it;
+      }),
+    };
+  }
+  function loadBoard(doc, note) {
+    if (!doc || !Array.isArray(doc.items)) { setStatus("err", "That file is not a Sketch2AI board"); return false; }
+    items.length = 0; selection = [];
+    for (const raw of doc.items) {
+      if (!raw || typeof raw !== "object") continue;
+      if (raw.type === "image") {
+        const { src, ...rest } = raw, it = { ...rest, img: new Image() };
+        it.img.onload = () => render();
+        it.img.src = src || "";
+        items.push(it);
+      } else if (raw.type === "shape" || raw.type === "text" || raw.type === "stroke") items.push(raw);
+    }
+    if (doc.view && typeof doc.view.scale === "number") { view.scale = doc.view.scale; view.x = doc.view.x || 0; view.y = doc.view.y || 0; }
+    resetHistory();               // undoing into the board this one replaced would be nonsense
+    render(); updateZoomLabel(); syncDiagramState();
+    setStatus("ok", note || `Opened ${items.length} item${items.length === 1 ? "" : "s"}`);
+    return true;
+  }
+  function saveBoardFile() {
+    const blob = new Blob([JSON.stringify(serializeBoard(), null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "sketch2ai-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click(); URL.revokeObjectURL(a.href);
+    setStatus("ok", "Saved " + a.download);
+  }
+  function openBoardFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try { loadBoard(JSON.parse(reader.result), "Opened " + file.name); }
+      catch (err) { setStatus("err", "Could not read " + file.name); }
+    };
+    reader.readAsText(file);
+  }
+  // Autosave is driven off render() and debounced, so a drag writes once when it
+  // settles rather than on every frame.
+  let saveTimer = null, autosaveOff = false;
+  function scheduleLocalSave() {
+    if (autosaveOff) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(serializeBoard())); }
+      catch (err) { autosaveOff = true; setStatus("err", "Too big to autosave — use Save file to keep it"); }
+    }, 700);
+  }
+  function restoreLocal() {
+    const params = new URLSearchParams(location.search);
+    if (params.has("bridge") || params.has("diagram")) return;  // the local bridge owns that canvas
+    let raw = null;
+    try { raw = localStorage.getItem(STORE_KEY); } catch (err) { autosaveOff = true; return; }
+    if (!raw) return;
+    try {
+      const doc = JSON.parse(raw);
+      if (doc && Array.isArray(doc.items) && doc.items.length) loadBoard(doc, "Restored your last board");
+    } catch (err) { /* corrupt entry: start clean rather than fail to open */ }
+  }
+  document.getElementById("saveboard").addEventListener("click", saveBoardFile);
+  document.getElementById("openboard").addEventListener("click", () => fileInput.click());
   window.addEventListener("paste", (e) => {
     if (document.activeElement && document.activeElement.classList.contains("txt-editor")) return;
     const dt = e.clipboardData; if (!dt) return; let handled = false;
@@ -891,7 +1167,10 @@
   ["dragenter", "dragover"].forEach((ev) => canvas.addEventListener(ev, (e) => e.preventDefault()));
   canvas.addEventListener("drop", (e) => {
     e.preventDefault(); const p = pos(e), wp = toWorld(p.x, p.y);
-    for (const f of e.dataTransfer.files) if (f.type.startsWith("image/")) addImageFromBlob(f, wp.x, wp.y);
+    for (const f of e.dataTransfer.files) {
+      if (isBoardFile(f)) openBoardFile(f);
+      else if (f.type.startsWith("image/")) addImageFromBlob(f, wp.x, wp.y);
+    }
     const uri = e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain");
     if (!e.dataTransfer.files.length && uri && /^https?:|^data:/.test(uri)) addImageFromSrc(uri, wp.x, wp.y);
   });
@@ -923,7 +1202,40 @@
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1500); setStatus("ok", "Saved sketch.png — drag it into Claude");
     }, "image/png");
   }
-  function commit(auto) { render(); if (auto && state.autocopy) copyToClipboard(true); }
+  function commit(auto) { recordHistory(); render(); if (auto && state.autocopy) copyToClipboard(true); syncDiagramState(); }
+
+  // ---------- undo / redo ----------
+  // History is a stack of whole-board snapshots taken at each committed change,
+  // so undo steps back through edits — a move, a resize, a restyle, a label, a
+  // delete — and not just through added items. Snapshots are cheap: items are
+  // flat objects, and image items share the already-decoded <img>.
+  const HISTORY_MAX = 100;
+  const undoStack = [], redoStack = [];
+  let lastState = [];
+  function snapshot() {
+    return items.map((it) => {
+      const c = Object.assign({}, it);
+      if (it.type === "stroke") c.points = it.points.map((p) => ({ x: p.x, y: p.y }));
+      if (it.dash) c.dash = it.dash.slice();
+      return c;
+    });
+  }
+  function recordHistory() {
+    undoStack.push(lastState);
+    if (undoStack.length > HISTORY_MAX) undoStack.shift();
+    redoStack.length = 0;
+    lastState = snapshot();
+  }
+  // Forget the past without recording a step: for a freshly opened board, where
+  // undoing into the previous document would be nonsense.
+  function resetHistory() { undoStack.length = 0; redoStack.length = 0; lastState = snapshot(); }
+  function applySnapshot(snap) {
+    items.length = 0; items.push(...snap);
+    selection = [];                       // the old selection points at replaced objects
+    lastState = snapshot();
+    render();
+    if (state.autocopy) copyToClipboard(true);
+  }
 
   // ---------- editing actions ----------
   function cloneItem(it) {
@@ -974,16 +1286,79 @@
   document.getElementById("tofront").addEventListener("click", () => reorder(true));
   document.getElementById("toback").addEventListener("click", () => reorder(false));
   document.getElementById("undo").addEventListener("click", doUndo);
+  document.getElementById("redo").addEventListener("click", doRedo);
   function doUndo() {
     if (editor) { cancelEditor(); return; }
-    items.pop(); selection = []; render();
-    if (items.length && state.autocopy) copyToClipboard(true); else setStatus("neutral", items.length ? "Undid last item" : "Canvas is empty");
+    if (!undoStack.length) { setStatus("neutral", "Nothing left to undo"); return; }
+    redoStack.push(snapshot());
+    applySnapshot(undoStack.pop());
+    setStatus("neutral", "Undid one change" + (undoStack.length ? "" : " — that was the last one"));
   }
-  document.getElementById("clear").addEventListener("click", () => { items.length = 0; selection = []; render(); setStatus("neutral", "Cleared"); });
+  function doRedo() {
+    if (editor) return;
+    if (!redoStack.length) { setStatus("neutral", "Nothing to redo"); return; }
+    const next = redoStack.pop();
+    undoStack.push(snapshot());
+    applySnapshot(next);
+    setStatus("neutral", "Redid one change");
+  }
+  document.getElementById("clear").addEventListener("click", () => {
+    if (!items.length) { setStatus("neutral", "Canvas is already empty"); return; }
+    items.length = 0; selection = []; commit(false); setStatus("neutral", "Cleared — ⌘Z brings it back");
+  });
   const autoInput = document.getElementById("autocopy");
   autoInput.addEventListener("change", () => { state.autocopy = autoInput.checked; setStatus("neutral", state.autocopy ? "Auto-copy is on" : "Auto-copy is off"); });
   document.getElementById("copynow").addEventListener("click", () => copyToClipboard(false));
   document.getElementById("savepng").addEventListener("click", savePng);
+
+  // ---------- format bar for the selection ----------
+  // Whatever the diagram bridge can draw, a selected shape can be restyled into:
+  // line weight, dash pattern, and (for lines) the arrowhead.
+  const styleBar = document.getElementById("stylebar");
+  const DASH_PRESETS = { solid: null, dashed: [4.5, 3.5], dotted: [0.1, 3.6] };
+  const WEIGHTS = [1.2, 2.5, 4.5];
+  function dashKindOf(sh) { return !sh.dash ? "solid" : (sh.dash[0] <= 1 ? "dotted" : "dashed"); }
+  function headKindOf(sh) { return sh.kind !== "arrow" ? "none" : (sh.headFill ? "fill" : "open"); }
+  function isLineShape(sh) { return sh.kind === "line" || sh.kind === "arrow"; }
+  function styleTargets() { return selection.filter((it) => it.type === "shape"); }
+  function restyle(fn) {
+    const targets = styleTargets();
+    if (!targets.length) return;
+    for (const sh of targets) fn(sh);
+    styleSig = null; commit(true);
+  }
+  styleBar.querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () =>
+    restyle((sh) => { sh.size = Number(b.dataset.w); if (sh.headFill) sh.head = headLen(sh.size); })));
+  styleBar.querySelectorAll("[data-dash]").forEach((b) => b.addEventListener("click", () =>
+    restyle((sh) => {
+      const d = DASH_PRESETS[b.dataset.dash];
+      if (d) sh.dash = d.slice(); else delete sh.dash;
+    })));
+  styleBar.querySelectorAll("[data-head]").forEach((b) => b.addEventListener("click", () =>
+    restyle((sh) => {
+      if (!isLineShape(sh)) return;
+      const k = b.dataset.head;
+      if (k === "none") { sh.kind = "line"; delete sh.headFill; delete sh.head; return; }
+      sh.kind = "arrow";
+      if (k === "open") { delete sh.headFill; delete sh.head; }
+      else { sh.headFill = true; sh.head = headLen(sh.size); }
+    })));
+  function headLen(size) { return Math.round(6 + size * 1.8); }
+  let styleSig = null;
+  function syncStyleBar() {
+    const targets = styleTargets(), sh = targets[0] || null;
+    const sig = sh ? [targets.length, sh.size, dashKindOf(sh), headKindOf(sh), isLineShape(sh)].join("|") : "";
+    if (sig === styleSig) return;
+    styleSig = sig;
+    styleBar.classList.toggle("on", !!sh);
+    if (!sh) return;
+    document.getElementById("sty-head").style.display = isLineShape(sh) ? "" : "none";
+    let nearest = WEIGHTS[0];
+    for (const w of WEIGHTS) if (Math.abs(w - sh.size) < Math.abs(nearest - sh.size)) nearest = w;
+    styleBar.querySelectorAll("[data-w]").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.w) === nearest));
+    styleBar.querySelectorAll("[data-dash]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.dash === dashKindOf(sh)));
+    styleBar.querySelectorAll("[data-head]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.head === headKindOf(sh)));
+  }
 
   // ---------- Claude Code bridge ----------
   // Active when the sketch CLI opens the board as ?bridge=1, or the diagram CLI
@@ -1026,26 +1401,57 @@
   })();
 
   // ---------- diagram inject ----------
-  // Only active when the diagram CLI opens the board as ?diagram=1. Fetches a
+  // Only active when the diagram CLI opens the board as ?diagram=1. Loads a
   // pre-laid-out set of items from the local server and drops them onto the
   // canvas as ordinary, editable shapes. The hosted page never does this.
+  //
+  // A later /sketch-diagram call reuses this same tab instead of opening a
+  // new one: its server binds the same fixed port and pushes just its new
+  // items over /events (Server-Sent Events), which this tab's EventSource
+  // reconnects to automatically once that call's server is listening. Each
+  // push carries a pushId so a reconnect within one call's lifetime is never
+  // applied twice. Nothing already on the canvas — Claude-drawn or hand-drawn
+  // — is ever touched by a later push.
   (function diagramMode() {
     if (!new URLSearchParams(location.search).has("diagram")) return;
+    diagramSyncEnabled = true;
+    // An injected diagram is there to be rearranged, not drawn over, so start in
+    // select mode rather than with the pen.
+    pickTool("select");
+    let lastPush = -1;
+    function applyItems(list) {
+      let added = 0;
+      for (const it of list) {
+        if (!it || typeof it !== "object") continue;
+        if (it.type === "shape" || it.type === "text") { items.push(it); added++; }
+      }
+      return added;
+    }
+    function onPush(data) {
+      if (!data || typeof data.pushId !== "number" || data.pushId <= lastPush) return;
+      lastPush = data.pushId;
+      const added = applyItems(Array.isArray(data.items) ? data.items : []);
+      // One history step per push, so ⌘Z takes back an injected diagram whole
+      // instead of stepping through its shapes one at a time.
+      if (added) { recordHistory(); fitToContent(); setStatus("ok", "Diagram updated ✓  edit it, then ⌘↵ to send back"); }
+      syncDiagramState();  // report the full box list back so the next call can see it right away
+    }
+    function listenForMore() {
+      const es = new EventSource("/events");
+      es.onmessage = (ev) => { try { onPush(JSON.parse(ev.data)); } catch (e) { /* ignore malformed push */ } };
+    }
     setStatus("neutral", "Loading diagram…");
     fetch("/diagram")
       .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then((data) => {
-        const incoming = Array.isArray(data && data.items) ? data.items : [];
-        let added = 0;
-        for (const it of incoming) {
-          if (!it || typeof it !== "object") continue;
-          if (it.type === "shape" || it.type === "text") { items.push(it); added++; }
-        }
+        lastPush = typeof data.pushId === "number" ? data.pushId : -1;
+        const added = applyItems(Array.isArray(data.items) ? data.items : []);
         if (!added) { setStatus("err", "Diagram was empty"); return; }
         fitToContent();
         setStatus("ok", "Diagram drawn ✓  edit it, then ⌘↵ to send back");
       })
-      .catch((err) => setStatus("err", "Diagram load failed (" + (err.message || err) + ")"));
+      .catch((err) => setStatus("err", "Diagram load failed (" + (err.message || err) + ")"))
+      .finally(() => { syncDiagramState(); listenForMore(); });
   })();
 
   // ---------- keyboard ----------
@@ -1054,9 +1460,12 @@
     if (e.code === "Space" && !spaceDown) { const a = document.activeElement; if (!(a && a.classList.contains("txt-editor"))) { spaceDown = true; if (!mode) canvas.style.cursor = "grab"; } }
     if (document.activeElement && document.activeElement.classList.contains("txt-editor")) return;
     const meta = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
-    if (meta && k === "z") { e.preventDefault(); doUndo(); }
+    if (meta && k === "z") { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); }
+    else if (meta && k === "y") { e.preventDefault(); doRedo(); }
     else if (meta && k === "c") { e.preventDefault(); copyToClipboard(false); }
     else if (meta && k === "d") { e.preventDefault(); duplicateSel(); }
+    else if (meta && k === "s") { e.preventDefault(); saveBoardFile(); }
+    else if (meta && k === "o") { e.preventDefault(); fileInput.click(); }
     else if (meta && e.key === "]") { e.preventDefault(); reorder(true); }
     else if (meta && e.key === "[") { e.preventDefault(); reorder(false); }
     else if (meta && (e.key === "=" || e.key === "+")) { e.preventDefault(); const v = viewSize(); setScaleAt(v.w / 2, v.h / 2, view.scale * 1.25); }
@@ -1072,6 +1481,6 @@
   // ---------- init ----------
   window.addEventListener("resize", resize);
   if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { refreshColors(); render(); });
-  refreshColors(); applyCursor(); updateZoomLabel(); resize();
+  refreshColors(); applyCursor(); updateZoomLabel(); resize(); restoreLocal();
 })();
 </script>
