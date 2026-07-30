@@ -9,6 +9,11 @@ freehand, text, and pasted images, and the visible canvas is copied to the
 clipboard as a PNG so you can paste it into Claude. It is a visual supplement to
 the text you type into Claude.
 
+Two things grew out of that: diagrams are editable the way draw.io is
+(connectors that stay attached, a format bar, connector labels), and a board can
+be kept — as a `.json` document you reopen and keep editing, and as a
+localStorage autosave — rather than only exported as a picture.
+
 Everything lives in `index.html`: markup, CSS, and JavaScript in one file. There
 is no build step, no framework, and no dependencies. Keep it that way unless
 there is a strong reason not to.
@@ -21,7 +26,9 @@ there is a strong reason not to.
 - `tools/sketch-diagram-bridge.py` — local bridge for the `/sketch-diagram`
   command: lays out a node/edge graph and injects it onto the canvas as editable
   shapes (see below). Independent of `sketch-bridge.py`.
+- `commands/` — copy-paste templates for the two Claude Code slash commands.
 - `README.md` — user-facing description and shortcuts.
+- `screenshot.png` — the image in the README.
 - `LICENSE` — MIT.
 - `CLAUDE.md` — this file.
 
@@ -53,7 +60,9 @@ labels), serves the board, and opens it with `?diagram=1`.
 
 - The board's `diagramMode()` IIFE (gated on `?diagram=1`) fetches `/diagram`
   and pushes the items straight onto the canvas, then `fitToContent()`. Because
-  they are ordinary items, everything is immediately draggable/editable.
+  they are ordinary items, everything is immediately draggable/editable. It also
+  starts the board in select mode instead of with the pen, since an injected
+  diagram is there to be rearranged.
 - Layout lives in Python on purpose: LLMs are reliable at graph *semantics* but
   not pixel coordinates, so Claude only emits nodes/edges and the code does
   geometry. Keep it that way.
@@ -67,6 +76,23 @@ labels), serves the board, and opens it with `?diagram=1`.
   it. A submission is optional and its absence is not an error: stdout's first
   line is always the "drew N nodes" confirmation; a second line with the
   edited PNG's path appears only if the user sent one back.
+
+### One board across several calls
+
+Repeated `/sketch-diagram` calls extend one board instead of opening a new tab
+each time. The server always binds the fixed `DIAGRAM_PORT`, and `SESSION_FILE`
+remembers what has been drawn (until `SESSION_TTL_S` passes). A later call
+appends only its new nodes and pushes that delta to the open tab over
+Server-Sent Events (`/events`), which the tab's `EventSource` reconnects to on
+its own; each push carries a `pushId` so a reconnect never applies one twice.
+Nothing already on the canvas is moved or redrawn.
+
+The board reports its live box list back to `/sync` after each change
+(`syncDiagramState()` in `index.html`), so `known_boxes()` sees boxes the user
+drew or relabelled by hand, not just Claude's own. `--list-boxes` prints that
+list as `id<TAB>label`, which lets a new call's edges attach to an existing box
+by its real id: an id already known is used as-is instead of getting this
+push's `dgm:` prefix.
 
 ### Connected arrows (draw.io-style)
 
@@ -84,15 +110,55 @@ Two ways to connect, both in select mode:
 - Draw an arrow with the arrow tool whose ends land on boxes — `finalizeCreate`
   attaches it the same way.
 
+Edge labels are placed by `placeLabels()`, called at the end of
+`refreshConnectors()` so it sees every re-routed line. A label does not sit on
+its line: it steps sideways along the line normal, which flips with edge
+direction, so the labels of `a->b` and `b->a` (identical midpoints) land on
+opposite sides. `LABEL_SPOTS` is the candidate list, cheapest first, sliding
+along the line and stepping further off it; the first candidate that clears
+every box and every label already placed wins. `drawItem` also paints a
+sheet-colored plate under a label carrying `from`/`to`, so a line crossing
+behind it cannot run through the letters. Hand-placed text has no `from`/`to`,
+so it gets neither the plate nor the repositioning. The diagram bridge emits its
+labels after all its arrows for the same reason (z-order).
+
+`fanOutParallel()` spreads connectors that share a box pair. Both ends of such a
+group route to the same boundary points, so an `a->b` / `b->a` pair used to draw
+as one double-headed line (two dashed ones even interleave into an apparently
+solid one). The whole group is offset along **one** reference normal, `group[0]`'s:
+each member's own normal flips with its direction and would push them all the
+same way.
+
+Double-clicking a connector labels it (`openConnectorLabel`), draw.io style: it
+reuses the existing `from`/`to` label if there is one, otherwise it creates a
+text item carrying the same `from`/`to` so `placeLabels` owns its position. A
+loose line (no attachment) gets plain text at its midpoint instead.
+
+### Format bar
+
+`#stylebar` is a floating bar over the stage, shown while a shape is selected
+(`syncStyleBar()`, called at the end of `render()` and cheap because it early-outs
+on an unchanged signature). It sets line weight, dash pattern, and the arrowhead;
+the arrowhead group hides for boxes. `restyle()` applies each change to every
+selected shape and commits.
+
+The presets and the diagram bridge deliberately share numbers: thin `1.2` =
+`EDGE_LINE`, dashed `[4.5, 3.5]` = `EDGE_DASH`, solid head `headLen(1.2)` = `8` =
+`EDGE_HEAD`, and the slate swatch `#5b6577` = `EDGE_INK`. That is what lets a
+hand-drawn arrow be restyled into an exact match for a generated connector, so
+keep them in sync if you change either side.
+
 ## Run and test
 
 Open `index.html` in Chrome, or serve the folder:
 
 ```
-uv run python3 -m http.server 8747 --directory .
+python3 -m http.server 8747 --directory .
 ```
 
-Note: in this environment use `uv run python3`, not bare `python3`.
+(If the repo is checked out somewhere that manages Python with uv, use
+`uv run python3` instead — the scripts themselves need nothing but the standard
+library either way.)
 
 To test interactively, drive Chrome and check the console for errors. Synthetic
 `PointerEvent`s return an empty `getCoalescedEvents()`, so freehand pen and
@@ -122,6 +188,14 @@ world units. Pan changes `view.x/y`; zoom changes `view.scale` around the cursor
   - `rect` / `ellipse`: `x, y, w, h` (normalized positive after creation). An
     optional `text` label renders centered inside.
   - `line` / `arrow`: `x1, y1, x2, y2`. `arrow` adds a computed arrowhead.
+
+  An optional `dash` (a `setLineDash` pattern in world units, or `true` for the
+  default) strokes the outline dashed. An arrowhead always stays solid. The
+  diagram bridge sets it on connectors so they read lighter than the boxes; the
+  drawing tools never set it, so hand shapes stay solid. On an `arrow`, `head`
+  overrides the arrowhead length (the default scales for pen strokes and is too
+  big on a thin connector) and `headFill` closes it into a solid triangle. All
+  three are set either by the diagram bridge or by the format bar.
 
 Only `image`, `text`, and `shape` are selectable. Strokes are background ink.
 
@@ -180,11 +254,35 @@ Tools: `P` pen, `G` highlighter, `E` eraser, `R` rectangle, `O` ellipse,
 `L` line, `A` arrow, `T` text, `M` move, `H` pan.
 View: `1` fit, `Cmd +` / `Cmd -` / `Cmd 0` zoom.
 Edit: `Cmd+D` duplicate, `Cmd+]` / `Cmd+[` layer front/back, `Cmd+Z` undo,
-`Cmd+C` copy, `Cmd+V` paste, `Delete` remove selection, `Esc` clear selection or
-cancel text editing.
+`Shift+Cmd+Z` (or `Cmd+Y`) redo, `Cmd+C` copy, `Cmd+V` paste, `Cmd+S` save the
+board as a file, `Cmd+O` open one, `Delete` remove selection, `Esc` clear
+selection or cancel text editing.
 
-Undo removes the last added item only. It does not step back individual moves,
-resizes, or label edits.
+## History, files, and autosave
+
+Undo/redo is a stack of whole-board snapshots, not a log of added items.
+`commit()` calls `recordHistory()`, which pushes the state as of the *previous*
+commit and takes a fresh one — so `doUndo` steps back through edits (a move, a
+resize, a restyle, a label, a delete, a clear) one at a time, and `doRedo`
+replays them. `applySnapshot()` always clears the selection, because the old
+selection array points at objects the snapshot just replaced. `HISTORY_MAX`
+caps the stack. `resetHistory()` is for opening a different board, where undoing
+into the replaced document would be nonsense. A `/sketch-diagram` push records
+exactly one step, so undo takes the injected diagram back whole.
+
+`serializeBoard()` / `loadBoard()` are the JSON document format
+(`{app, version, view, items}`), used by three things: the Save/Open buttons
+(`⌘S` / `⌘O`, plus dropping a `.json` on the canvas), and the localStorage
+autosave under `sketch2ai.board.v1`. Autosave is debounced off `render()`, so a
+drag writes once when it settles; on quota failure it turns itself off and says
+so rather than throwing on every frame. `restoreLocal()` runs at init but skips
+`?bridge=1` / `?diagram=1`, where the local server owns the canvas and a restore
+would duplicate what it pushes.
+
+Image items hold a live `<img>`, so serialization swaps it for a `src` data URL
+(`imageSrc()` re-encodes `blob:` and file URLs through a canvas; a cross-origin
+image taints that canvas, so it keeps the URL instead). Snapshots do the
+opposite and share the decoded `<img>` — they never leave the page.
 
 ## Deployment
 

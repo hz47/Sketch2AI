@@ -3,7 +3,8 @@
 A tiny, single-file whiteboard for explaining ideas to Claude with a picture
 instead of a paragraph. Draw a box with an arrow, and it is on your clipboard —
 or, in the terminal, one keypress away from your Claude Code session. Claude can
-also draw diagrams back onto the board that you then rearrange by hand.
+also draw diagrams back onto the board that you then rearrange by hand, and you
+can save a board and pick it up again later.
 
 Sometimes it is faster to draw the thing than to describe it. That is the whole idea.
 
@@ -22,6 +23,7 @@ Sometimes it is faster to draw the thing than to describe it. That is the whole 
   - [`/sketch-diagram` — Claude draws for you](#sketch-diagram--claude-draws-for-you)
   - [Setup](#setup)
 - [Editing diagrams (draw.io-style)](#editing-diagrams-drawio-style)
+- [Saving and undo](#saving-and-undo)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Notes](#notes)
 - [Built with](#built-with)
@@ -34,11 +36,16 @@ Sometimes it is faster to draw the thing than to describe it. That is the whole 
 - Freehand **pen**, a **highlighter** for marking up screenshots, and an **eraser**.
 - Paste a screenshot or text with **Cmd+V**, or drag image files in from Finder.
 - Move, resize, duplicate, and layer anything; drag a marquee to select several.
+- Connect boxes with arrows that stay attached, label the arrows, and restyle any
+  line from the format bar. See [Editing diagrams](#editing-diagrams-drawio-style).
 - Endless canvas — scroll to pan, Cmd+scroll to zoom.
+- **Undo and redo** step through your edits one at a time.
+- **Keep the board** — save it as an editable file, and let the browser remember
+  your last one. See [Saving and undo](#saving-and-undo).
 - Every change copies the visible canvas to your clipboard, ready to paste into Claude.
 
-There is a **Copy now** button (when auto-copy is off) and a **Save PNG** button
-that downloads the board as a file.
+There is a **Copy now** button (when auto-copy is off), a **Save PNG** button for
+the flat picture, and a save icon that writes the board as an editable file.
 
 ## Quick start
 
@@ -118,7 +125,34 @@ Diagrams are made of normal shapes, with connectors that behave like draw.io:
   drop **inside** the box to attach it floating (routes to the facing edge).
 - **Re-route** — select an arrow, grab an endpoint handle, and drag it to a
   different box (or to empty space to detach it).
+- **Restyle** — select any shape and a format bar appears at the bottom: line
+  weight, solid / dashed / dotted, and the arrowhead (none, open, or solid). Every
+  style Claude draws with is in there, so a line you drew by hand can be made to
+  match a generated one exactly (pick thin + dashed + solid head, and the slate
+  swatch for the connector grey).
+- **Label a connector** — double-click a line or arrow to type its label, or to
+  edit the label it already has. The label rides beside the line and keeps clear
+  of the boxes and of other labels.
 - **Delete** — select an arrow and press **Delete**.
+
+Two arrows between the same pair of boxes fan out side by side instead of
+overprinting each other, so a there-and-back pair stays readable.
+
+## Saving and undo
+
+- **Save as a file** — `Cmd+S`, or the save icon in the toolbar, writes a `.json`
+  board: every shape, arrow, label, stroke, and pasted image, not a flattened
+  picture. Reopen it with `Cmd+O`, the open icon, or by dropping the file on the
+  canvas, and carry on editing exactly where you left off. (`Save PNG` is still
+  there for the flat image you paste into Claude.)
+- **Autosave** — the board is kept in the browser's local storage as you work and
+  comes back when you reopen the page. It is per browser and per site, so use a
+  file when you want a copy you can keep, move, or share. Boards opened by the
+  `/sketch` and `/sketch-diagram` bridges are not restored this way, since those
+  commands supply their own canvas.
+- **Undo** — `Cmd+Z` steps back one change at a time: a move, a resize, a restyle,
+  a label edit, a delete, even a `Clear`. `Shift+Cmd+Z` redoes. An entire diagram
+  drawn by `/sketch-diagram` counts as one step.
 
 ## Keyboard shortcuts
 
@@ -131,7 +165,8 @@ Diagrams are made of normal shapes, with connectors that behave like draw.io:
 | `Cmd +` / `Cmd -` / `Cmd 0` | Zoom in / out / reset to 100% |
 | `Cmd+D` | Duplicate the selection |
 | `Cmd+]` / `Cmd+[` | Bring to front / send to back |
-| `Cmd+Z` | Undo the last added item |
+| `Cmd+Z` / `Shift+Cmd+Z` | Undo / redo one change |
+| `Cmd+S` / `Cmd+O` | Save the board as a file / open one |
 | `Cmd+C` / `Cmd+V` | Copy the drawing / paste image or text |
 | `Delete` | Remove the selected items |
 
