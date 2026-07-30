@@ -1,0 +1,6 @@
+# Python bytecode from running the local bridges
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
